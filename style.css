@@ -1,0 +1,150 @@
+:root {
+  --spotify-green: #1db954;
+  --background-primary: #121212;
+  --background-secondary: #181818;
+  --background-tertiary: #282828;
+  --text-primary: #ffffff;
+  --text-secondary: #b3b3b3;
+  --trend-down-red: #e22134;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Montserrat", sans-serif;
+  background-color: var(--background-primary);
+  color: var(--text-primary);
+  padding: 20px;
+}
+
+.hidden { display: none !important; }
+
+.container {
+  max-width: 600px;
+  margin: 20px auto;
+  background-color: var(--background-secondary);
+  padding: 30px;
+  border-radius: 12px;
+}
+
+h1 {
+  color: var(--spotify-green);
+  text-align: center;
+  margin-bottom: 30px;
+}
+h2 {
+    margin-top: 30px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid var(--background-tertiary);
+    padding-bottom: 10px;
+}
+
+/* --- ESTILOS DO LOGIN (copiados) --- */
+.studio-login-wrapper {
+  background-color: var(--background-primary); /* Ajustado para contraste */
+  padding: 24px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+}
+.studio-login-wrapper label {
+  display: block; font-size: 12px; font-weight: 700;
+  color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase;
+}
+.studio-login-wrapper select {
+  width: 100%; background-color: var(--background-tertiary);
+  border: 1px solid #535353; color: var(--text-primary); padding: 14px;
+  border-radius: 6px; font-size: 14px; font-family: "Montserrat", sans-serif;
+  margin-bottom: 16px;
+}
+#loggedInInfo p { font-size: 14px; color: var(--text-secondary); }
+#loggedInInfo p strong { color: var(--text-primary); }
+#loggedInInfo { display: flex; justify-content: space-between; align-items: center; }
+
+/* --- BOTÕES (copiados) --- */
+.submit-btn {
+  background-color: var(--spotify-green); color: black; border: none;
+  padding: 16px 24px; width: 100%; border-radius: 500px; font-size: 16px;
+  font-weight: 700; cursor: pointer; margin-top: 16px;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+.submit-btn:hover:not(:disabled) { transform: scale(1.02); background-color: #1ed760; }
+.submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.small-btn {
+  background: transparent; border: 1px solid var(--spotify-green);
+  color: var(--spotify-green); padding: 6px 10px; border-radius: 6px;
+  font-weight: 700; cursor: pointer; margin-left: 6px; font-size: 12px;
+}
+.small-btn:hover:not(:disabled) { background: rgba(29, 185, 84, 0.1); }
+.small-btn:disabled { opacity: 0.5; cursor: not-allowed; border-color: var(--text-secondary); color: var(--text-secondary); }
+.small-btn i { margin-right: 4px; }
+
+/* --- LISTA DE AÇÕES --- */
+#artistActionsList {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+.artist-action-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--background-tertiary);
+    padding: 15px;
+    border-radius: 8px;
+}
+.artist-action-item span { /* Nome do Artista */
+    font-weight: 600;
+    font-size: 16px;
+    margin-right: 10px; /* Espaço entre nome e botões */
+    flex-shrink: 0; /* Impede que o nome encolha */
+}
+.artist-action-buttons {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap; /* Permite que botões quebrem linha em telas menores */
+    gap: 8px; /* Espaço entre botões */
+}
+
+/* O span que mostra o cooldown */
+.cooldown-display {
+    font-size: 11px;
+    color: var(--trend-down-red);
+    margin-left: 5px; /* Espaço antes do tempo */
+    white-space: nowrap; /* Impede que quebre linha */
+}
+
+
+.footer-link {
+    margin-top: 30px;
+    text-align: center;
+}
+.footer-link a {
+    color: var(--text-secondary);
+    font-size: 14px;
+    text-decoration: none;
+}
+.footer-link a:hover {
+    color: var(--spotify-green);
+    text-decoration: underline;
+}
+
+/* Responsividade simples */
+@media (max-width: 450px) {
+    .artist-action-item {
+        flex-direction: column;
+        align-items: flex-start; /* Alinha tudo à esquerda */
+        gap: 10px;
+    }
+    .artist-action-buttons {
+        width: 100%;
+        justify-content: flex-start; /* Alinha botões à esquerda */
+    }
+    .small-btn {
+        margin-left: 0; /* Remove margem esquerda nos botões */
+    }
+}
