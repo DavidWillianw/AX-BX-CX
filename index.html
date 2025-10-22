@@ -37,5 +37,50 @@
          </div>
     </div>
 
+    <div id="actionModal" class="modal-overlay hidden">
+        <div class="modal-content action-modal-content">
+            <h3 id="modalArtistName">Selecionar Ação</h3>
+            <input type="hidden" id="modalArtistId"> <div class="studio-form-group">
+                <label for="releaseSelect">Selecionar Lançamento (Álbum/Single/EP)</label>
+                <select id="releaseSelect" required>
+                    <option value="">Carregando lançamentos...</option>
+                    </select>
+            </div>
+
+            <div id="trackSelectWrapper" class="studio-form-group hidden"> <label for="trackSelect">Selecionar Faixa Principal</label>
+                 <select id="trackSelect">
+                     </select>
+            </div>
+
+            <div class="studio-form-group">
+                <label for="actionTypeSelect">Tipo de Ação</label>
+                <select id="actionTypeSelect" required>
+                    <option value="" disabled selected>Escolha uma ação...</option>
+                    <optgroup label="Divulgação">
+                        <option value="promo_tv">Divulgar na TV</option>
+                        <option value="promo_radio">Divulgar na Rádio</option>
+                        <option value="promo_commercial">Comercial da Música</option>
+                    </optgroup>
+                    <optgroup label="Lançamentos Especiais">
+                        <option value="remix">Lançar Versão/Remix</option>
+                        <option value="mv">Lançar MV no Spotify</option>
+                    </optgroup>
+                     </select>
+            </div>
+
+             <div id="remixCountInfo" class="hidden">
+                 Remixes Lançados: <span id="currentRemixCount">0</span> / 5
+             </div>
+
+            <div class="modal-actions">
+                <button type="button" class="submit-btn" id="confirmActionButton">Confirmar Ação</button>
+                <button type="button" class="cancel-btn" id="cancelActionButton">Cancelar</button>
+            </div>
+
+            <div id="actionCooldownInfo">
+                </div>
+        </div>
+    </div>
+
     <script src="script.js"></script> </body>
 </html>
