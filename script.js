@@ -164,7 +164,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 allReleases.push({
                     id: record.id,
                     // ASSUMINDO: Que Singles e EPs usa 'Nome do Álbum'
-                    name: record.fields['Nome do Álbum'] || 'Single/EP sem nome',
+                    name: record.fields['Nome do Single/EP'] || 'Single/EP sem nome',
                     // ASSUMINDO: Que Singles e EPs usa 'Artista'
                     artists: record.fields['Artista'] || []
                 });
@@ -174,8 +174,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             // 4. Processar Faixas (da tabela Músicas)
             db.tracks = tracksData.records.map(record => {
                 // Link para Álbum ou Single/EP (Mantido)
-                const releaseId = (record.fields['Álbum'] ? record.fields['Álbum'][0] : null) || 
-                                  (record.fields['Single/EP'] ? record.fields['Single/EP'][0] : null);
+                const releaseId = (record.fields['Álbuns'] ? record.fields['Álbuns'][0] : null) || 
+                                  (record.fields['Singles e EPs'] ? record.fields['Singles e EPs'][0] : null);
                 
                 return {
                     id: record.id,
