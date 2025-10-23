@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Chave localStorage (Apenas para login)
     const PLAYER_ID_KEY = 'spotifyRpgActions_playerId';
 
-    // Configuração das Ações
+    // Configuração das Ações (sem mudanças)
     const ACTION_CONFIG = {
         'promo_tv': { 
             limit: 10, 
@@ -110,6 +110,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // ATUALIZADO: Carrega todos os dados necessários de 5 tabelas
     async function loadRequiredData() {
+        // URLs das tabelas (com encode)
         const artistsURL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Artists`;
         const playersURL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Jogadores`;
         const albumsURL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${encodeURIComponent('Álbuns')}`;
@@ -131,8 +132,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // 1. Processar Artistas
             db.artists = artistsData.records.map(record => ({
                 id: record.id,
-                 // CORRIGIDO: Usar ['Name'] (o link da base mostra 'Name' para esta tabela)
-                name: record.fields['Name'] || 'Nome Indisponível',
+                name: record.fields['Name'] || 'Nome Indisponível', // (Correto)
                 RPGPoints: record.fields.RPGPoints || 0,
                 LastActive: record.fields.LastActive || null,
                 promo_tv_count: record.fields.Promo_TV_Count || 0,
@@ -146,9 +146,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             // 2. Processar Jogadores
             db.players = playersData.records.map(record => ({
                 id: record.id,
-                // CORRIGIDO: Usar ['Nome'] (o link da base mostra 'Nome' para esta tabela)
-                name: record.fields['Nome'], 
-                artists: record.fields['Artistas'] || [] 
+                name: record.fields['Nome'], // (Correto)
+                artists: record.fields['Artistas'] || [] // (Correto)
             }));
 
             // 3. Processar Lançamentos (Juntando Álbuns e Singles)
@@ -156,30 +155,31 @@ document.addEventListener('DOMContentLoaded', async () => {
             albumsData.records.forEach(record => {
                 allReleases.push({
                     id: record.id,
-                    // CORRIGIDO: Usar ['Name'] (o link da base mostra 'Name' para esta tabela)
-                    name: record.fields['Name'] || 'Álbum sem nome', 
-                    artists: record.fields['Artistas'] || [] 
+                    name: record.fields['Nome do Álbum'] || 'Álbum sem nome', // (Correto)
+                    // CORRIGIDO: Nome do campo é 'Artista' (singular)
+                    artists: record.fields['Artista'] || [] 
                 });
             });
             singlesData.records.forEach(record => {
                 allReleases.push({
                     id: record.id,
-                    // CORRIGIDO: Usar ['Name'] (o link da base mostra 'Name' para esta tabela)
-                    name: record.fields['Name'] || 'Single/EP sem nome',
-                    artists: record.fields['Artistas'] || []
+                    // ASSUMINDO: Que Singles e EPs usa 'Nome do Álbum'
+                    name: record.fields['Nome do Álbum'] || 'Single/EP sem nome',
+                    // ASSUMINDO: Que Singles e EPs usa 'Artista'
+                    artists: record.fields['Artista'] || []
                 });
             });
             db.releases = allReleases;
 
             // 4. Processar Faixas (da tabela Músicas)
             db.tracks = tracksData.records.map(record => {
+                // Link para Álbum ou Single/EP (Mantido)
                 const releaseId = (record.fields['Álbum'] ? record.fields['Álbum'][0] : null) || 
                                   (record.fields['Single/EP'] ? record.fields['Single/EP'][0] : null);
                 
                 return {
                     id: record.id,
-                    // CORRIGIDO: Usar ['Name'] (o link da base mostra 'Name' para esta tabela)
-                    name: record.fields['Name'] || 'Faixa sem nome',
+                    name: record.fields['Nome da Faixa'] || 'Faixa sem nome', // (Correto)
                     release: releaseId,
                     streams: record.fields.Streams || 0
                 };
@@ -290,7 +290,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         modalArtistName.textContent = artist.name;
         modalArtistId.value = artist.id;
         
-        populateReleaseSelect(artist.id); // Esta função não tem mais 'debug'
+        populateReleaseSelect(artist.id);
         
         actionTypeSelect.value = "";
         trackSelectWrapper.classList.add('hidden');
@@ -301,7 +301,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         actionModal.classList.remove('hidden');
     }
 
-    // Popula o select de Lançamentos (REVERTIDO - Sem Debug)
+    // Popula o select de Lançamentos
     function populateReleaseSelect(artistId) {
         // FILTRA A LISTA UNIFICADA 'db.releases'
         const artistReleases = db.releases.filter(r => r.artists.includes(artistId));
@@ -321,7 +321,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Popula o select de Faixas (agora com faixas de 'Músicas')
+    // Popula o select de Faixas
     function populateTrackSelect(releaseId) {
         // FILTRA A LISTA 'db.tracks'
         const releaseTracks = db.tracks.filter(t => t.release === releaseId);
