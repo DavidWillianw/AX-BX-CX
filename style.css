@@ -254,3 +254,68 @@ h2 {
     }
 
 }
+/* --- ESTILOS DOS INDICADORES DE CHART --- */
+.chart-rank-indicator {
+    width: 20px; /* Largura fixa para o indicador */
+    text-align: center;
+    font-size: 14px;
+    font-weight: bold;
+    margin-right: 5px; /* Espaço entre indicador e rank */
+    display: flex; /* Para centralizar o ícone se necessário */
+    align-items: center;
+    justify-content: center;
+}
+
+.chart-rank-indicator.trend-up {
+    color: var(--spotify-green);
+}
+
+.chart-rank-indicator.trend-down {
+    color: var(--trend-down-red);
+}
+
+.chart-rank-indicator.trend-stable,
+.chart-rank-indicator.trend-new {
+    color: var(--text-secondary); /* Cinza para estável ou novo */
+    /* Para o estável, podemos usar um ícone diferente se quisermos */
+}
+.chart-rank-indicator.trend-stable .fa-minus,
+.chart-rank-indicator.trend-new .fa-minus {
+   font-size: 10px; /* Deixa o traço um pouco menor */
+}
+
+
+/* Ajuste no Grid do Chart Item para incluir o indicador */
+.chart-list .chart-item {
+  display: grid;
+  /* Colunas: Indicador | Rank | Imagem | Info | Duração/Score */
+  grid-template-columns: 20px 25px 50px 1fr auto;
+  align-items: center;
+  gap: 10px; /* Ajuste o gap se necessário */
+  padding: 10px 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+/* Ajuste no Rank para alinhar */
+.chart-item .chart-rank {
+    /* Mantém o estilo, mas o grid cuida do posicionamento */
+    text-align: right; /* Alinha o número à direita */
+}
+
+/* Ajuste para o RPG Chart (artistsGrid) se ele também tiver rank */
+/* Adapte se o #artistsGrid tiver outra estrutura */
+#artistsSection .artist-card .rpg-rank {
+    /* Ajuste posicionamento se necessário */
+    left: 5px; /* Exemplo: Mover um pouco para dar espaço ao indicador */
+}
+/* Adicionar um span para o indicador no RPG Chart se não existir */
+#artistsSection .artist-card .rpg-indicator {
+    position: absolute;
+    top: 5px;
+    left: 25px; /* Posição exemplo ao lado do rank */
+    font-size: 14px;
+    font-weight: bold;
+     /* Cores serão definidas pelas classes trend-* */
+}
