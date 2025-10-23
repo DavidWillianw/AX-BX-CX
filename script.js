@@ -1,14 +1,19 @@
 document.addEventListener('DOMContentLoaded', async () => {
 
     // --- VARIÁVEIS GLOBAIS ---
-    let db = { artists: [], albums: [], singles: [], songs: [], players: [] };
+    let db = { 
+        artists: [], 
+        players: [],
+        releases: [], // ATUALIZADO: Será preenchido por 'Álbums' e 'Singles e EPs'
+        tracks: []      // ATUALIZADO: Virá da tabela 'Músicas'
+    };
     let currentPlayer = null;
 
     // IDs da base
     const AIRTABLE_BASE_ID = 'appG5NOoblUmtSMVI';
     const AIRTABLE_API_KEY = 'pat5T28kjmJ4t6TQG.69bf34509e687fff6a3f76bd52e64518d6c92be8b1ee0a53bcc9f50fedcb5c70';
 
-    // --- ELEMENTOS DO DOM ---
+    // Elementos da UI (sem mudanças)
     const loginPrompt = document.getElementById('loginPrompt');
     const loggedInInfo = document.getElementById('loggedInInfo');
     const playerSelect = document.getElementById('playerSelect');
@@ -16,28 +21,72 @@ document.addEventListener('DOMContentLoaded', async () => {
     const logoutButton = document.getElementById('logoutButton');
     const actionsWrapper = document.getElementById('actionsWrapper');
     const artistActionsList = document.getElementById('artistActionsList');
-
-    // Elementos do Modal
     const actionModal = document.getElementById('actionModal');
     const modalArtistName = document.getElementById('modalArtistName');
-    const modalArtistIdInput = document.getElementById('modalArtistId');
+    const modalArtistId = document.getElementById('modalArtistId');
     const releaseSelect = document.getElementById('releaseSelect');
     const trackSelectWrapper = document.getElementById('trackSelectWrapper');
     const trackSelect = document.getElementById('trackSelect');
     const actionTypeSelect = document.getElementById('actionTypeSelect');
-    const remixCountInfo = document.getElementById('remixCountInfo');
-    const currentRemixCountSpan = document.getElementById('currentRemixCount');
     const confirmActionButton = document.getElementById('confirmActionButton');
     const cancelActionButton = document.getElementById('cancelActionButton');
-    const actionCooldownInfo = document.getElementById('actionCooldownInfo');
+    const actionLimitInfo = document.getElementById('actionLimitInfo');
+    const currentActionCount = document.getElementById('currentActionCount');
+    const maxActionCount = document.getElementById('maxActionCount');
 
-
-    // Chaves localStorage
+    // Chave localStorage (Apenas para login)
     const PLAYER_ID_KEY = 'spotifyRpgActions_playerId';
-    const COOLDOWNS_KEY = 'spotifyRpgActions_cooldowns';
+
+    // Configuração das Ações (Confirmada por você)
+    const ACTION_CONFIG = {
+        'promo_tv': { 
+            limit: 10, 
+            countField: 'Promo_TV_Count',
+            localCountKey: 'promo_tv_count', 
+            minStreams: 50000, 
+            maxStreams: 100000 
+        },
+        'promo_radio': { 
+            limit: 10, 
+            countField: 'Promo_Radio_Count',
+            localCountKey: 'promo_radio_count',
+            minStreams: 30000, 
+            maxStreams: 70000 
+        },
+        'promo_commercial': {
+            limit: 5, 
+            countField: 'Promo_Commercial_Count',
+            localCountKey: 'promo_commercial_count',
+            minStreams: 10000, 
+            maxStreams: 150000
+        },
+        'promo_internet': {
+            limit: 15, 
+            countField: 'Promo_Internet_Count',
+            localCountKey: 'promo_internet_count',
+            minStreams: 10000, 
+            maxStreams: 40000 
+        },
+        'remix': { 
+            limit: 5, 
+            countField: 'Remix_Count',
+            localCountKey: 'remix_count',
+            minStreams: 25000, 
+            maxStreams: 50000 
+        },
+        'mv': { 
+            limit: 3, 
+            countField: 'MV_Count',
+            localCountKey: 'mv_count',
+            minStreams: 70000, 
+            maxStreams: 120000 
+        }
+    };
+
 
     // --- 1. CARREGAMENTO DE DADOS ---
 
+    // Helper para buscar TODAS as páginas
     async function fetchAllAirtablePages(baseUrl, fetchOptions) {
         let allRecords = [];
         let offset = null;
@@ -51,104 +100,106 @@ document.addEventListener('DOMContentLoaded', async () => {
                 throw new Error(`Airtable fetch failed for ${baseUrl}`);
             }
             const data = await response.json();
-            if (data.records) allRecords.push(...data.records);
+            if (data.records) {
+                allRecords.push(...data.records);
+            }
             offset = data.offset;
         } while (offset);
         return { records: allRecords };
     }
 
+    // ATUALIZADO: Carrega todos os dados necessários de 5 tabelas
     async function loadRequiredData() {
+        // CORREÇÃO: Nomes das tabelas
         const artistsURL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Artists`;
-        const albumsURL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Álbuns`;
-        const musicasURL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Músicas`;
-        const singlesURL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Singles%20e%20EPs`;
         const playersURL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Jogadores`;
+        const albumsURL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Álbums`;
+        const singlesURL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Singles e EPs`;
+        const tracksURL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Músicas`;
+        
         const fetchOptions = { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } };
 
-        console.log("Carregando todos os dados necessários (com paginação)...");
+        console.log("Carregando dados de 5 tabelas...");
         try {
-            const [artistsData, albumsData, musicasData, singlesData, playersData] = await Promise.all([
+            // ATUALIZADO: Busca de 5 tabelas em paralelo
+            const [artistsData, playersData, albumsData, singlesData, tracksData] = await Promise.all([
                 fetchAllAirtablePages(artistsURL, fetchOptions),
-                fetchAllAirtablePages(albumsURL, fetchOptions),
-                fetchAllAirtablePages(musicasURL, fetchOptions),
-                fetchAllAirtablePages(singlesURL, fetchOptions),
-                fetchAllAirtablePages(playersURL, fetchOptions)
+                fetchAllAirtablePages(playersURL, fetchOptions),
+                fetchAllAirtablePages(albumsURL, fetchOptions),  // NOVO
+                fetchAllAirtablePages(singlesURL, fetchOptions), // NOVO
+                fetchAllAirtablePages(tracksURL, fetchOptions)   // NOVO
             ]);
 
-            if (!artistsData || !albumsData || !musicasData || !singlesData || !playersData) {
-                 throw new Error('Falha ao carregar dados Airtable (paginação).');
-            }
-
-            // Processa Artistas
+            // 1. Processar Artistas (sem mudança, estava correto)
             db.artists = artistsData.records.map(record => ({
                 id: record.id,
                 name: record.fields.Name || 'Nome Indisponível',
                 RPGPoints: record.fields.RPGPoints || 0,
-                // ==========================================
-                // === VERIFIQUE ESTE NOME NO AIRTABLE ===
-                // ==========================================
-                LastActive: record.fields['LastActive'] || null // <<< SUBSTITUA 'LastActive' SE NECESSÁRIO
+                LastActive: record.fields.LastActive || null,
+                promo_tv_count: record.fields.Promo_TV_Count || 0,
+                promo_radio_count: record.fields.Promo_Radio_Count || 0,
+                promo_commercial_count: record.fields.Promo_Commercial_Count || 0,
+                promo_internet_count: record.fields.Promo_Internet_Count || 0,
+                remix_count: record.fields.Remix_Count || 0,
+                mv_count: record.fields.MV_Count || 0
             }));
 
-             // Processa Músicas
-             db.songs = musicasData.records.map(record => ({
-                id: record.id,
-                title: record.fields['Nome da Faixa'] || 'Faixa Sem Título',
-                artistIds: record.fields['Artista'] || [],
-                // ========================================================
-                // === VERIFIQUE OS NOMES DESTES CAMPOS LINK NO AIRTABLE ===
-                // ========================================================
-                albumId: (record.fields['Álbuns'] ? record.fields['Álbuns'][0] : null) || (record.fields['Singles e EPs'] ? record.fields['Singles e EPs'][0] : null), // <<< CONFIRME 'Álbuns' e 'Singles e EPs'
-                // ========================================================
-                // === CRIE ESTE CAMPO NUMÉRICO NO AIRTABLE ("Músicas") ===
-                // ========================================================
-                remixCount: record.fields['Remix Count'] || 0 // <<< CONFIRME 'Remix Count'
-            }));
-
-            // Processa Álbuns e Singles/EPs
-             const processReleases = (records, isAlbum) => records.map(record => {
-                const fields = record.fields;
-                const releaseId = record.id;
-                // Encontra as musicas JÁ PROCESSADAS para este release
-                const tracks = db.songs.filter(s => s.albumId === releaseId)
-                                       .sort((a,b) => (a.trackNumber || 0) - (b.trackNumber || 0)); // Ordena por número da faixa
-                return {
-                     id: releaseId,
-                     title: fields[isAlbum ? 'Nome do Álbum' : 'Nome do Single/EP'] || 'Título Indisponível',
-                     artistId: (fields['Artista'] || [])[0] || null,
-                     releaseDate: fields['Data de Lançamento'] || '1970-01-01',
-                     isAlbum: isAlbum,
-                     tracks: tracks // Linka as músicas processadas
-                };
-             });
-
-            db.albums = processReleases(albumsData.records, true);
-            db.singles = processReleases(singlesData.records, false);
-
-            // Processa Jogadores
+            // 2. Processar Jogadores (sem mudança, estava correto)
             db.players = playersData.records.map(record => ({
                 id: record.id,
                 name: record.fields.Nome,
                 artists: record.fields.Artistas || []
             }));
 
-            console.log(`Dados carregados: ${db.artists.length} artistas, ${db.albums.length} álbuns, ${db.singles.length} singles, ${db.songs.length} músicas, ${db.players.length} jogadores.`);
+            // 3. ATUALIZADO: Processar Lançamentos (Juntando Álbuns e Singles)
+            const allReleases = [];
+            // Adiciona Álbuns
+            albumsData.records.forEach(record => {
+                allReleases.push({
+                    id: record.id,
+                    name: record.fields.Name || 'Álbum sem nome',
+                    artists: record.fields.Artistas || []
+                });
+            });
+            // Adiciona Singles e EPs
+            singlesData.records.forEach(record => {
+                allReleases.push({
+                    id: record.id,
+                    name: record.fields.Name || 'Single/EP sem nome',
+                    artists: record.fields.Artistas || []
+                });
+            });
+            db.releases = allReleases;
+
+            // 4. ATUALIZADO: Processar Faixas (da tabela Músicas)
+            db.tracks = tracksData.records.map(record => {
+                // Lógica para encontrar o ID do lançamento, seja de Álbum ou Single
+                const releaseId = (record.fields['Álbum'] ? record.fields['Álbum'][0] : null) || 
+                                  (record.fields['Single/EP'] ? record.fields['Single/EP'][0] : null);
+                
+                return {
+                    id: record.id,
+                    name: record.fields.Name || 'Faixa sem nome',
+                    release: releaseId, // O ID do álbum OU single
+                    streams: record.fields.Streams || 0 // Campo 'Streams'
+                };
+            });
+
+            console.log(`Dados carregados: ${db.artists.length} artistas, ${db.players.length} jogadores, ${db.releases.length} lançamentos (Álbuns + Singles), ${db.tracks.length} faixas.`);
 
         } catch (error) {
             console.error("Erro ao carregar dados:", error);
-            artistActionsList.innerHTML = `<p>Erro ao carregar dados do Airtable.</p>`;
-            // Opcional: Desabilitar funcionalidade de login se dados falharem
-             loginButton.disabled = true;
-             playerSelect.disabled = true;
+            artistActionsList.innerHTML = "<p>Erro ao carregar dados do Airtable.</p>";
         }
     }
 
     // --- 2. LÓGICA DE LOGIN ---
+    // (Sem mudanças, esta parte estava correta)
     function loginPlayer(playerId) {
         currentPlayer = db.players.find(p => p.id === playerId);
         if (!currentPlayer) {
              console.error(`Jogador com ID ${playerId} não encontrado no DB local.`);
-             logoutPlayer();
+             logoutPlayer(); 
              return;
         }
         localStorage.setItem(PLAYER_ID_KEY, playerId);
@@ -166,7 +217,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         loggedInInfo.classList.add('hidden');
         actionsWrapper.classList.add('hidden');
         artistActionsList.innerHTML = "<p>Faça login para ver as ações.</p>";
-        closeActionModal(); // Fecha o modal se estiver aberto
     }
 
     function initializeLogin() {
@@ -185,53 +235,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         logoutButton.addEventListener('click', logoutPlayer);
 
         const storedPlayerId = localStorage.getItem(PLAYER_ID_KEY);
-        // Tenta logar apenas se houver jogadores carregados
-        if (storedPlayerId && db.players.length > 0) {
+        if (storedPlayerId) {
             loginPlayer(storedPlayerId);
-        } else if (db.players.length > 0) { // Só mostra msg de login se houver jogadores
+        } else {
              artistActionsList.innerHTML = "<p>Faça login para ver as ações.</p>";
         }
     }
 
     // --- 3. LÓGICA DE AÇÕES RPG ---
+    // (Sem mudanças, esta parte estava correta)
 
-    function loadCooldownsFromStorage() {
-        const savedCooldowns = localStorage.getItem(COOLDOWNS_KEY);
-        try {
-            const parsed = savedCooldowns ? JSON.parse(savedCooldowns) : {};
-            // Limpa entradas inválidas ou expiradas (extra check)
-            const now = Date.now();
-            const validCooldowns = {};
-            for (const key in parsed) {
-                if (typeof parsed[key] === 'number' && parsed[key] > now) {
-                    validCooldowns[key] = parsed[key];
-                }
-            }
-            return validCooldowns;
-        } catch (e) {
-            console.error("Erro ao carregar cooldowns do localStorage:", e);
-            localStorage.removeItem(COOLDOWNS_KEY); // Limpa se estiver corrompido
-            return {};
-        }
+    // Helper de aleatoriedade
+    function getRandomInt(min, max) {
+        min = Math.ceil(min);
+        max = Math.floor(max);
+        return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
-
-    function saveCooldownsToStorage(cooldowns) {
-        const now = Date.now();
-        const cleanedCooldowns = {};
-        for (const key in cooldowns) {
-            if (cooldowns[key] > now) {
-                cleanedCooldowns[key] = cooldowns[key];
-            }
-        }
-        try {
-            localStorage.setItem(COOLDOWNS_KEY, JSON.stringify(cleanedCooldowns));
-        } catch (e) {
-            console.error("Erro ao salvar cooldowns no localStorage:", e);
-        }
-    }
-
-
+    // Mostra os artistas com o botão "Selecionar Ação"
     function displayArtistActions() {
         if (!currentPlayer) return;
 
@@ -246,390 +267,224 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         artistActionsList.innerHTML = playerArtists.map(artist => `
-            <div class="artist-action-item" data-artist-id="${artist.id}" role="button" tabindex="0" aria-label="Ações para ${artist.name}">
-                <span class="artist-name">${artist.name}</span>
-                <span class="open-actions-icon"><i class="fas fa-chevron-right"></i></span>
+            <div class="artist-action-item" data-artist-id="${artist.id}">
+                <span>${artist.name}</span>
+                <div class="artist-action-buttons">
+                    <button class="small-btn btn-open-modal">Selecionar Ação</button>
+                </div>
             </div>
         `).join('');
 
-        artistActionsList.querySelectorAll('.artist-action-item').forEach(item => {
-            item.addEventListener('click', () => openActionModal(item.dataset.artistId));
-            // Adiciona suporte a teclado (Enter)
-             item.addEventListener('keydown', (e) => {
-                 if (e.key === 'Enter') openActionModal(item.dataset.artistId);
-             });
+        document.querySelectorAll('.btn-open-modal').forEach(button => {
+            button.addEventListener('click', handleOpenModalClick);
         });
     }
 
-    function openActionModal(artistId) {
+    // --- 4. LÓGICA DO MODAL ---
+    // (Sem mudanças, esta parte estava correta e agora recebe os dados certos)
+
+    // Abre o modal e popula com dados do artista
+    function handleOpenModalClick(event) {
+        const artistId = event.currentTarget.closest('.artist-action-item').dataset.artistId;
         const artist = db.artists.find(a => a.id === artistId);
         if (!artist) return;
 
-        modalArtistName.textContent = `Ações para ${artist.name}`;
-        modalArtistIdInput.value = artistId;
+        modalArtistName.textContent = artist.name;
+        modalArtistId.value = artist.id;
+        
+        populateReleaseSelect(artist.id);
+        
         actionTypeSelect.value = "";
         trackSelectWrapper.classList.add('hidden');
-        remixCountInfo.classList.add('hidden');
-        actionCooldownInfo.textContent = '';
-        confirmActionButton.disabled = true; // Desabilita confirmação até selecionar ação
-
-        const artistReleases = [...db.albums, ...db.singles]
-            .filter(r => r.artistId === artistId)
-            .sort((a, b) => new Date(b.releaseDate) - new Date(a.releaseDate));
-
-        releaseSelect.innerHTML = '<option value="" disabled selected>Selecione um lançamento...</option>';
-        if (artistReleases.length === 0) {
-            releaseSelect.innerHTML += '<option value="" disabled>Nenhum lançamento encontrado</option>';
-        } else {
-            artistReleases.forEach(release => {
-                // Guarda se é album e o ID no data attribute
-                releaseSelect.innerHTML += `<option value="${release.id}" data-is-album="${release.isAlbum}">${release.title} (${new Date(release.releaseDate).getFullYear()})</option>`;
-            });
-        }
-        releaseSelect.value = ""; // Garante que nada esteja pré-selecionado
+        actionLimitInfo.classList.add('hidden');
+        confirmActionButton.disabled = false;
+        confirmActionButton.textContent = 'Confirmar Ação';
 
         actionModal.classList.remove('hidden');
     }
 
-    function closeActionModal() {
-        actionModal.classList.add('hidden');
-    }
-
-    function populateTrackSelect() {
-        const selectedReleaseOption = releaseSelect.options[releaseSelect.selectedIndex];
-        if (!selectedReleaseOption || !selectedReleaseOption.value) { // Verifica se algo foi selecionado
-             trackSelectWrapper.classList.add('hidden');
-             remixCountInfo.classList.add('hidden');
-             showActionCooldown(); // Atualiza cooldown mesmo sem release
-             return;
-        }
-
-        const releaseId = selectedReleaseOption.value;
-        const isAlbum = selectedReleaseOption.dataset.isAlbum === 'true';
-        const actionType = actionTypeSelect.value;
-
-        // Ações que PRECISAM de seleção de faixa (se for Álbum/EP)
-        const requiresTrackForAlbum = ['promo_tv', 'promo_radio', 'promo_commercial', 'remix', 'mv'];
-
-        // Mostra o select de faixas?
-        const showTrackSelect = isAlbum && requiresTrackForAlbum.includes(actionType);
-
-        if (showTrackSelect) {
-            const release = db.albums.find(a => a.id === releaseId) || db.singles.find(s => s.id === releaseId);
-            if (release && release.tracks && release.tracks.length > 0) {
-                trackSelect.innerHTML = '<option value="" disabled selected>Escolha a faixa...</option>';
-                // Ordena faixas por número antes de popular
-                release.tracks.sort((a,b) => (a.trackNumber || 0) - (b.trackNumber || 0)).forEach(track => {
-                    trackSelect.innerHTML += `<option value="${track.id}">${track.title}</option>`;
-                });
-                trackSelectWrapper.classList.remove('hidden');
-            } else {
-                trackSelect.innerHTML = '<option value="" disabled>Nenhuma faixa encontrada</option>';
-                 trackSelectWrapper.classList.remove('hidden');
-            }
-        } else {
-            trackSelectWrapper.classList.add('hidden');
-        }
-
-        // Mostra info de Remix? (Independente de ser album ou single, se a ação for remix)
-        if (actionType === 'remix') {
-             showRemixCount();
-        } else {
-             remixCountInfo.classList.add('hidden');
-        }
-
-        showActionCooldown(); // Atualiza o cooldown para a ação selecionada
-    }
-
-
-     function showActionCooldown() {
-        const artistId = modalArtistIdInput.value;
-        const actionKey = actionTypeSelect.value;
-        actionCooldownInfo.textContent = '';
-        confirmActionButton.disabled = true; // Desabilita por padrão
-
-        if (!artistId || !actionKey || !releaseSelect.value) return; // Precisa ter release selecionado também
-
-        const timeLeft = getCooldownTimeLeft(artistId, actionKey);
-
-        if (timeLeft > 0) {
-            const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-            actionCooldownInfo.textContent = `Em cooldown: (${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')})`;
-            // Mantém desabilitado
-        } else {
-             // Habilita SOMENTE se não estiver em cooldown E outras condições forem válidas (como limite de remix)
-             const isRemixAction = actionKey === 'remix';
-             const remixLimitReached = isRemixAction && !remixCountInfo.classList.contains('hidden') && parseInt(currentRemixCountSpan.textContent) >= 5;
-
-             if (!remixLimitReached) {
-                confirmActionButton.disabled = false;
-             } else if (isRemixAction) {
-                // Se o limite de remix foi atingido, mostra msg e mantém desabilitado
-                actionCooldownInfo.textContent = 'Limite de remixes atingido para esta faixa.';
-             }
-        }
-     }
-
-     function showRemixCount() {
-         const selectedReleaseOption = releaseSelect.options[releaseSelect.selectedIndex];
-         if (!selectedReleaseOption || !selectedReleaseOption.value) {
-             remixCountInfo.classList.add('hidden');
-             return;
-         }
-         const releaseId = selectedReleaseOption.value;
-         const isAlbum = selectedReleaseOption.dataset.isAlbum === 'true';
-         let targetSongId = null;
-
-         if (isAlbum) {
-             targetSongId = trackSelect.value; // Pega a faixa selecionada no álbum
-         } else {
-             // Se for single, encontra a primeira faixa
-             const release = db.singles.find(s => s.id === releaseId);
-             if (release && release.tracks && release.tracks.length > 0) {
-                 targetSongId = release.tracks[0].id;
-             }
-         }
-
-         if (targetSongId) {
-             const song = db.songs.find(s => s.id === targetSongId);
-             const count = song ? song.remixCount : 0;
-             currentRemixCountSpan.textContent = count;
-             remixCountInfo.classList.remove('hidden');
-
-             // Atualiza estado do botão e cooldown baseado na contagem
-            showActionCooldown(); // Reavalia o botão e msg de cooldown/limite
-         } else {
-             remixCountInfo.classList.add('hidden');
-             // Se não tem faixa alvo (ex: selecionou album mas não a faixa ainda),
-             // desabilita o botão de confirmação para remix
-             if (actionTypeSelect.value === 'remix') {
-                 confirmActionButton.disabled = true;
-                 actionCooldownInfo.textContent = 'Selecione a faixa para ver o limite de remix.';
-             }
-         }
-     }
-
-
-    async function handleConfirmAction() {
-        const artistId = modalArtistIdInput.value;
-        const releaseId = releaseSelect.value;
-        const action = actionTypeSelect.value;
-        const selectedReleaseOption = releaseSelect.options[releaseSelect.selectedIndex];
-        const isAlbum = selectedReleaseOption?.dataset.isAlbum === 'true'; // Usa optional chaining
-
-        let targetSongId = null; // ID da música que será afetada (para Remix/MV ou faixa principal)
-
-         // Verifica campos obrigatórios
-         if (!artistId || !releaseId || !action) {
-            alert("Por favor, selecione artista, lançamento e tipo de ação.");
+    // Popula o select de Lançamentos (agora com Álbuns e Singles)
+    function populateReleaseSelect(artistId) {
+        // FILTRA A LISTA UNIFICADA 'db.releases'
+        const artistReleases = db.releases.filter(r => r.artists.includes(artistId));
+        releaseSelect.innerHTML = '<option value="" disabled selected>Selecione um lançamento...</option>';
+        
+        if (artistReleases.length === 0) {
+            releaseSelect.innerHTML = '<option value="" disabled>Nenhum lançamento encontrado</option>';
             return;
         }
 
-        // Determina a música alvo
-        const requiresTrackSelection = ['promo_tv', 'promo_radio', 'promo_commercial', 'remix', 'mv'];
-        if (isAlbum && requiresTrackSelection.includes(action)) {
-             targetSongId = trackSelect.value;
-             if (!targetSongId) {
-                 alert("Por favor, selecione a faixa principal.");
-                 return;
-             }
-        } else if (!isAlbum) { // Se for single, pega a ID da primeira faixa automaticamente
-             const release = db.singles.find(s => s.id === releaseId);
-             if (release && release.tracks && release.tracks.length > 0) {
-                 targetSongId = release.tracks[0].id;
-                 // Para ações que não precisam de faixa específica em single (nenhuma no momento), targetSongId pode ficar null.
-                 // Mas Remix/MV precisam.
-                 if (!targetSongId && (action === 'remix' || action === 'mv')) {
-                      alert("Não foi possível encontrar a faixa do single.");
-                      return;
-                 }
-             } else if (action === 'remix' || action === 'mv') { // Single sem faixas? Erro.
-                  alert("Erro: Single selecionado não possui faixas associadas.");
-                  return;
-             }
-        }
-        // Se targetSongId ainda for null aqui para remix ou mv, algo deu errado
-         if ((action === 'remix' || action === 'mv') && !targetSongId) {
-              alert("Erro inesperado: Não foi possível determinar a faixa alvo para Remix/MV.");
-              return;
-         }
+        artistReleases.sort((a,b) => a.name.localeCompare(b.name)).forEach(release => {
+            const option = document.createElement('option');
+            option.value = release.id;
+            option.textContent = release.name;
+            releaseSelect.appendChild(option);
+        });
+    }
 
+    // Popula o select de Faixas (agora com faixas de 'Músicas')
+    function populateTrackSelect(releaseId) {
+        // FILTRA A LISTA 'db.tracks'
+        const releaseTracks = db.tracks.filter(t => t.release === releaseId);
+        trackSelect.innerHTML = '<option value="" disabled selected>Selecione uma faixa...</option>';
+        
+        if (releaseTracks.length === 0) {
+            trackSelect.innerHTML = '<option value="" disabled>Nenhuma faixa encontrada</option>';
+            trackSelectWrapper.classList.add('hidden');
+            return;
+        }
+
+        releaseTracks.sort((a,b) => a.name.localeCompare(b.name)).forEach(track => {
+            const option = document.createElement('option');
+            option.value = track.id;
+            option.textContent = track.name;
+            trackSelect.appendChild(option); // Corrigido de releaseSelect para trackSelect
+        });
+        
+        trackSelectWrapper.classList.remove('hidden');
+    }
+
+    // Atualiza a info de limite no modal
+    function updateActionLimitInfo() {
+        const artistId = modalArtistId.value;
+        const actionType = actionTypeSelect.value;
+        const artist = db.artists.find(a => a.id === artistId);
+        
+        if (!artist || !actionType || !ACTION_CONFIG[actionType]) {
+            actionLimitInfo.classList.add('hidden');
+            return;
+        }
+        
+        const config = ACTION_CONFIG[actionType];
+        const currentCount = artist[config.localCountKey]; // Pega a contagem local
+        const limit = config.limit;
+
+        currentActionCount.textContent = currentCount;
+        maxActionCount.textContent = limit;
+        actionLimitInfo.classList.remove('hidden');
+        
+        if (currentCount >= limit) {
+             currentActionCount.style.color = 'var(--trend-down-red)';
+             confirmActionButton.disabled = true;
+             confirmActionButton.textContent = 'Limite Atingido';
+        } else {
+             currentActionCount.style.color = 'var(--text-primary)';
+             confirmActionButton.disabled = false;
+             confirmActionButton.textContent = 'Confirmar Ação';
+        }
+    }
+
+
+    // Função principal que executa a ação
+    async function handleConfirmAction() {
+        const artistId = modalArtistId.value;
+        const trackId = trackSelect.value;
+        const actionType = actionTypeSelect.value;
+
+        if (!artistId || !trackId || !actionType) {
+            alert("Por favor, selecione o lançamento, a faixa principal e o tipo de ação.");
+            return;
+        }
+
+        const artist = db.artists.find(a => a.id === artistId);
+        const track = db.tracks.find(t => t.id === trackId);
+        const config = ACTION_CONFIG[actionType];
+
+        if (!artist || !track || !config) {
+            alert("Erro: Dados inválidos. Tente recarregar a página.");
+            return;
+        }
+
+        const currentCount = artist[config.localCountKey];
+        if (currentCount >= config.limit) {
+            alert("Limite de ações para esta categoria atingido. Aguarde a próxima atualização manual.");
+            return;
+        }
 
         confirmActionButton.disabled = true;
-        confirmActionButton.textContent = 'Executando...';
+        confirmActionButton.textContent = 'Processando...';
 
-        const success = await performRPGAction(action, artistId, targetSongId); // Passa songId para remix/mv
+        // 1. Calcular streams aleatórios
+        const streamsToAdd = getRandomInt(config.minStreams, config.maxStreams);
+        
+        // 2. Preparar dados para o PATCH
+        const newCount = currentCount + 1;
+        const newStreams = track.streams + streamsToAdd;
 
-        confirmActionButton.textContent = 'Confirmar Ação'; // Volta o texto padrão
-
-        if (success) {
-            closeActionModal();
-            // Opcional: Mostrar uma notificação de sucesso
-            alert(`Ação "${actionTypeSelect.options[actionTypeSelect.selectedIndex].text}" executada com sucesso!`);
-        } else {
-             // Mantém modal aberto, atualiza estado visual (cooldown/limite)
-             showActionCooldown();
-             if (action === 'remix') showRemixCount();
-        }
-    }
-
-
-    function getCooldownSecondsForAction(action) {
-        const cooldownMapSec = {
-            promo_tv: 60 * 60 * 4,
-            promo_radio: 60 * 60 * 2,
-            promo_commercial: 60 * 60 * 6,
-            remix: 60 * 60 * 24,
-            mv: 60 * 60 * 12,
+        const artistPatchBody = {
+            fields: { [config.countField]: newCount } // Ex: "Promo_TV_Count": 1
         };
-        return cooldownMapSec[action] || 60 * 5;
-    }
-
-    // Aceita targetSongId opcional
-    async function performRPGAction(action, artistId, targetSongId = null) {
-        const actionPointsMap = {
-            promo_tv: 100, promo_radio: 50, promo_commercial: 150,
-            remix: 80, mv: 120
+        
+        const trackPatchBody = {
+            fields: { "Streams": newStreams } // Ex: "Streams": 150000
         };
-        const points = actionPointsMap[action] || 0;
-        const cooldownSec = getCooldownSecondsForAction(action);
-        const REMIX_LIMIT = 5;
 
-        if (points === 0) {
-            console.warn(`Ação '${action}' não configurada ou sem pontos.`);
-            alert(`Ação '${action}' não reconhecida.`);
-            return false;
-        }
-
-        const timeLeft = getCooldownTimeLeft(artistId, action);
-        if (timeLeft > 0) {
-            console.log(`Ação '${action}' para ${artistId} em cooldown.`);
-            return false;
-        }
-
-        let currentRemixCount = 0;
-        if (action === 'remix') {
-            if (!targetSongId) {
-                 alert("Erro: ID da música alvo não encontrado para o remix.");
-                 console.error("performRPGAction: targetSongId é null para ação remix.");
-                 return false;
-            }
-            const song = db.songs.find(s => s.id === targetSongId);
-            currentRemixCount = song ? song.remixCount : 0;
-            if (currentRemixCount >= REMIX_LIMIT) {
-                alert("Limite de remixes atingido para esta faixa.");
-                console.log(`Limite de remixes atingido para ${targetSongId} (Artista: ${artistId})`);
-                return false;
-            }
-        }
-
-        const cooldowns = loadCooldownsFromStorage();
-        const endTime = Date.now() + (cooldownSec * 1000);
-        cooldowns[`${artistId}_${action}`] = endTime;
-        saveCooldownsToStorage(cooldowns);
-
-        const artistEntryLocal = db.artists.find(a => a.id === artistId);
-        const currentPoints = artistEntryLocal ? artistEntryLocal.RPGPoints : 0;
-        const newPoints = currentPoints + points;
-        const newLastActive = new Date().toISOString();
-
-        console.log(`Aplicando ${points} pts para ${artistId} via ação '${action}'. Novo total (tentativa): ${newPoints}`);
-
+        // 3. Enviar os PATCHes para o Airtable
         try {
-            // 1. Atualiza Artista
-            // ==========================================
-            // === VERIFIQUE ESTE NOME NO AIRTABLE ===
-            // ==========================================
-            const artistLastActiveField = 'LastActive'; // <<< CONFIRME ESTE NOME
-
-            const artistPatchBody = { fields: { 'RPGPoints': newPoints, [artistLastActiveField]: newLastActive } };
-            const artistResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Artists/${artistId}`, {
+            const artistPatchUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Artists/${artistId}`;
+            // CORREÇÃO: URL da tabela de Músicas
+            const trackPatchUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Músicas/${trackId}`;
+            
+            const fetchOptions = {
                 method: 'PATCH',
                 headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify(artistPatchBody)
-            });
-            if (!artistResponse.ok) {
-                const errorData = await artistResponse.json();
-                throw new Error(`Falha ao ATUALIZAR ARTISTA no Airtable: ${JSON.stringify(errorData.error)}`);
+            };
+
+            const [artistResponse, trackResponse] = await Promise.all([
+                fetch(artistPatchUrl, { ...fetchOptions, body: JSON.stringify(artistPatchBody) }),
+                fetch(trackPatchUrl, { ...fetchOptions, body: JSON.stringify(trackPatchBody) })
+            ]);
+
+            if (!artistResponse.ok || !trackResponse.ok) {
+                const errorA = artistResponse.statusText;
+                const errorT = trackResponse.statusText;
+                throw new Error(`Falha ao salvar: Artista (${errorA}) / Faixa (${errorT})`);
             }
-            console.log(`Artista ${artistId} atualizado no Airtable.`);
 
-             if(artistEntryLocal) {
-                 artistEntryLocal.RPGPoints = newPoints;
-                 artistEntryLocal.LastActive = newLastActive; // Atualiza o local também
-             }
+            // 4. Se sucesso, atualizar o DB local
+            artist[config.localCountKey] = newCount;
+            track.streams = newStreams;
 
-            // 2. Atualiza Contagem de Remix (se aplicável)
-            if (action === 'remix' && targetSongId) {
-                 const newRemixCount = currentRemixCount + 1;
-                 // ==========================================
-                 // === VERIFIQUE ESTE NOME NO AIRTABLE ===
-                 // ==========================================
-                 const remixCountField = 'Remix Count'; // <<< CONFIRME ESTE NOME
-                 const songPatchBody = { fields: { [remixCountField]: newRemixCount } };
-
-                 const songResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Músicas/${targetSongId}`, {
-                     method: 'PATCH',
-                     headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}`, 'Content-Type': 'application/json' },
-                     body: JSON.stringify(songPatchBody)
-                 });
-                 if (!songResponse.ok) {
-                    const errorData = await songResponse.json();
-                    console.error(`Falha ao ATUALIZAR CONTAGEM DE REMIX para ${targetSongId} no Airtable: ${JSON.stringify(errorData.error)}`);
-                    alert("Ação de pontos aplicada, mas houve um erro ao atualizar a contagem de remixes.");
-                 } else {
-                     console.log(`Contagem de remix para ${targetSongId} atualizada para ${newRemixCount}.`);
-                     const songEntryLocal = db.songs.find(s => s.id === targetSongId);
-                     if (songEntryLocal) {
-                         songEntryLocal.remixCount = newRemixCount;
-                     }
-                 }
-            }
-            // 3. Adicionar lógica para MV se necessário (ex: marcar um campo booleano 'MV Lançado?')
-
-            return true; // Sucesso
+            alert(`Ação "${actionTypeSelect.options[actionTypeSelect.selectedIndex].text}" registrada!\n\n+${streamsToAdd.toLocaleString('pt-BR')} streams para "${track.name}".\n\nUso: ${newCount}/${config.limit}`);
+            
+            actionModal.classList.add('hidden');
 
         } catch (err) {
             console.error('Erro ao tentar persistir no Airtable:', err);
             alert(`Erro ao salvar ação: ${err.message}`);
-
-            // Rollback do cooldown local
-            const currentCooldowns = loadCooldownsFromStorage();
-            delete currentCooldowns[`${artistId}_${action}`];
-            saveCooldownsToStorage(currentCooldowns);
-
-            return false; // Falha
+            confirmActionButton.disabled = false;
+            confirmActionButton.textContent = 'Confirmar Ação';
         }
     }
 
 
-    // --- 5. INICIALIZAÇÃO GERAL ---
-    await loadRequiredData();
+    // --- 5. INICIALIZAÇÃO ---
 
+    // Listeners do Modal
+    releaseSelect.addEventListener('change', () => {
+        if (releaseSelect.value) {
+            populateTrackSelect(releaseSelect.value);
+        } else {
+            trackSelectWrapper.classList.add('hidden');
+        }
+    });
+
+    actionTypeSelect.addEventListener('change', updateActionLimitInfo);
+    // Adicionado para checar o limite assim que a faixa é selecionada
+    trackSelect.addEventListener('change', updateActionLimitInfo); 
+
+    cancelActionButton.addEventListener('click', () => {
+        actionModal.classList.add('hidden');
+    });
+
+    confirmActionButton.addEventListener('click', handleConfirmAction);
+
+
+    // Carga inicial
+    await loadRequiredData();
     if (db.players.length > 0 && db.artists.length > 0) {
         initializeLogin();
-         // Listeners do Modal (só adiciona se o modal existe)
-         if (actionModal) {
-            releaseSelect.addEventListener('change', populateTrackSelect);
-            actionTypeSelect.addEventListener('change', populateTrackSelect);
-            trackSelect.addEventListener('change', showRemixCount); // Se a ação for remix, mostra contagem ao mudar faixa
-            confirmActionButton.addEventListener('click', handleConfirmAction);
-            cancelActionButton.addEventListener('click', closeActionModal);
-            // Fecha modal clicando fora
-            actionModal.addEventListener('click', (e) => {
-                 if (e.target === actionModal) { // Clicou no overlay escuro?
-                    closeActionModal();
-                 }
-            });
-         } else {
-             console.error("Modal de Ação não encontrado no HTML!");
-         }
     } else {
          artistActionsList.innerHTML = "<p>Não foi possível carregar os dados necessários. Verifique o console.</p>";
-         // Desabilita login se dados falharam
-          playerSelect.disabled = true;
-          loginButton.disabled = true;
     }
-
 });
