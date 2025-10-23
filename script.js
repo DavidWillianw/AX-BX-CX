@@ -4,8 +4,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     let db = { 
         artists: [], 
         players: [],
-        releases: [], // ATUALIZADO: Será preenchido por 'Álbums' e 'Singles e EPs'
-        tracks: []      // ATUALIZADO: Virá da tabela 'Músicas'
+        releases: [], // Será preenchido por 'Álbuns' e 'Singles e EPs'
+        tracks: []      // Virá da tabela 'Músicas'
     };
     let currentPlayer = null;
 
@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Chave localStorage (Apenas para login)
     const PLAYER_ID_KEY = 'spotifyRpgActions_playerId';
 
-    // Configuração das Ações (Confirmada por você)
+    // Configuração das Ações
     const ACTION_CONFIG = {
         'promo_tv': { 
             limit: 10, 
@@ -108,12 +108,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         return { records: allRecords };
     }
 
-  // ATUALIZADO: Carrega todos os dados necessários de 5 tabelas
+    // ATUALIZADO: Carrega todos os dados necessários de 5 tabelas
     async function loadRequiredData() {
-        // CORREÇÃO: Nomes das tabelas com caracteres especiais/espaços precisam ser codificados
-        const artistsURL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Artists`; // ASCII, OK
-        const playersURL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Jogadores`; // ASCII, OK
-        
+        const artistsURL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Artists`;
+        const playersURL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Jogadores`;
         const albumsURL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${encodeURIComponent('Álbuns')}`;
         const singlesURL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${encodeURIComponent('Singles e EPs')}`;
         const tracksURL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${encodeURIComponent('Músicas')}`;
@@ -122,7 +120,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         console.log("Carregando dados de 5 tabelas (com URL codificada)...");
         try {
-            // ATUALIZADO: Busca de 5 tabelas em paralelo
             const [artistsData, playersData, albumsData, singlesData, tracksData] = await Promise.all([
                 fetchAllAirtablePages(artistsURL, fetchOptions),
                 fetchAllAirtablePages(playersURL, fetchOptions),
@@ -131,10 +128,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 fetchAllAirtablePages(tracksURL, fetchOptions)
             ]);
 
-            // 1. Processar Artistas (OK)
+            // 1. Processar Artistas
             db.artists = artistsData.records.map(record => ({
                 id: record.id,
-                name: record.fields.Name || 'Nome Indisponível',
+                 // CORRIGIDO: Usar ['Name'] (o link da base mostra 'Name' para esta tabela)
+                name: record.fields['Name'] || 'Nome Indisponível',
                 RPGPoints: record.fields.RPGPoints || 0,
                 LastActive: record.fields.LastActive || null,
                 promo_tv_count: record.fields.Promo_TV_Count || 0,
@@ -148,40 +146,40 @@ document.addEventListener('DOMContentLoaded', async () => {
             // 2. Processar Jogadores
             db.players = playersData.records.map(record => ({
                 id: record.id,
-                name: record.fields.Nome,
-                // CORRIGIDO: Usar colchetes para 'Artistas'
+                // CORRIGIDO: Usar ['Nome'] (o link da base mostra 'Nome' para esta tabela)
+                name: record.fields['Nome'], 
                 artists: record.fields['Artistas'] || [] 
             }));
 
-            // 3. ATUALIZADO: Processar Lançamentos (Juntando Álbuns e Singles)
+            // 3. Processar Lançamentos (Juntando Álbuns e Singles)
             const allReleases = [];
             albumsData.records.forEach(record => {
                 allReleases.push({
                     id: record.id,
-                    name: record.fields.Name || 'Álbum sem nome',
-                    // CORRIGIDO: Usar colchetes para 'Artistas'
+                    // CORRIGIDO: Usar ['Name'] (o link da base mostra 'Name' para esta tabela)
+                    name: record.fields['Name'] || 'Álbum sem nome', 
                     artists: record.fields['Artistas'] || [] 
                 });
             });
             singlesData.records.forEach(record => {
                 allReleases.push({
                     id: record.id,
-                    name: record.fields.Name || 'Single/EP sem nome',
-                    // CORRIGIDO: Usar colchetes para 'Artistas'
+                    // CORRIGIDO: Usar ['Name'] (o link da base mostra 'Name' para esta tabela)
+                    name: record.fields['Name'] || 'Single/EP sem nome',
                     artists: record.fields['Artistas'] || []
                 });
             });
             db.releases = allReleases;
 
-            // 4. ATUALIZADO: Processar Faixas (da tabela Músicas)
+            // 4. Processar Faixas (da tabela Músicas)
             db.tracks = tracksData.records.map(record => {
-                // (Esta parte já estava correta usando colchetes)
                 const releaseId = (record.fields['Álbum'] ? record.fields['Álbum'][0] : null) || 
                                   (record.fields['Single/EP'] ? record.fields['Single/EP'][0] : null);
                 
                 return {
                     id: record.id,
-                    name: record.fields.Name || 'Faixa sem nome',
+                    // CORRIGIDO: Usar ['Name'] (o link da base mostra 'Name' para esta tabela)
+                    name: record.fields['Name'] || 'Faixa sem nome',
                     release: releaseId,
                     streams: record.fields.Streams || 0
                 };
@@ -196,7 +194,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // --- 2. LÓGICA DE LOGIN ---
-    // (Sem mudanças, esta parte estava correta)
+    
     function loginPlayer(playerId) {
         currentPlayer = db.players.find(p => p.id === playerId);
         if (!currentPlayer) {
@@ -245,7 +243,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // --- 3. LÓGICA DE AÇÕES RPG ---
-    // (Sem mudanças, esta parte estava correta)
 
     // Helper de aleatoriedade
     function getRandomInt(min, max) {
@@ -283,7 +280,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // --- 4. LÓGICA DO MODAL ---
-    // (Sem mudanças, esta parte estava correta e agora recebe os dados certos)
 
     // Abre o modal e popula com dados do artista
     function handleOpenModalClick(event) {
@@ -294,7 +290,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         modalArtistName.textContent = artist.name;
         modalArtistId.value = artist.id;
         
-        populateReleaseSelect(artist.id);
+        populateReleaseSelect(artist.id); // Esta função não tem mais 'debug'
         
         actionTypeSelect.value = "";
         trackSelectWrapper.classList.add('hidden');
@@ -305,36 +301,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         actionModal.classList.remove('hidden');
     }
 
-// Popula o select de Lançamentos (agora com Álbuns e Singles)
+    // Popula o select de Lançamentos (REVERTIDO - Sem Debug)
     function populateReleaseSelect(artistId) {
-        
-        // --- INÍCIO DO DEBUG ---
-        console.log(`--- DEBUG: populateReleaseSelect ---`);
-        console.log(`Procurando lançamentos para o Artista ID:`, artistId);
-        // --- FIM DO DEBUG ---
-
         // FILTRA A LISTA UNIFICADA 'db.releases'
-        const artistReleases = db.releases.filter(r => {
-            // --- DEBUG ---
-            // Vamos logar a primeira comparação para ver o que está acontecendo
-            if (console.logCount === undefined) { 
-                console.logCount = 0; 
-            }
-            if (console.logCount < 1) { // Loga apenas o primeiro item da lista
-                console.log(`Verificando Release: '${r.name}'`);
-                console.log(`Artistas deste Release (r.artists):`, r.artists);
-                console.log(`O ID ${artistId} está incluído?`, r.artists.includes(artistId));
-                console.logCount++; // Incrementa para não logar os 40
-            }
-            // --- FIM DEBUG ---
-
-            return r.artists.includes(artistId);
-        });
-
-        // Reseta o contador de log para a próxima vez que o modal for aberto
-        console.logCount = 0; 
-        console.log(`--- FIM DEBUG: Encontrados ${artistReleases.length} lançamentos ---`);
-
+        const artistReleases = db.releases.filter(r => r.artists.includes(artistId));
 
         releaseSelect.innerHTML = '<option value="" disabled selected>Selecione um lançamento...</option>';
         
@@ -350,6 +320,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             releaseSelect.appendChild(option);
         });
     }
+
     // Popula o select de Faixas (agora com faixas de 'Músicas')
     function populateTrackSelect(releaseId) {
         // FILTRA A LISTA 'db.tracks'
@@ -366,7 +337,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const option = document.createElement('option');
             option.value = track.id;
             option.textContent = track.name;
-            trackSelect.appendChild(option); // Corrigido de releaseSelect para trackSelect
+            trackSelect.appendChild(option);
         });
         
         trackSelectWrapper.classList.remove('hidden');
@@ -450,8 +421,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 3. Enviar os PATCHes para o Airtable
         try {
             const artistPatchUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Artists/${artistId}`;
-            // CORREÇÃO: URL da tabela de Músicas
-            const trackPatchUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Músicas/${trackId}`;
+            const trackPatchUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${encodeURIComponent('Músicas')}/${trackId}`;
             
             const fetchOptions = {
                 method: 'PATCH',
@@ -498,7 +468,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     actionTypeSelect.addEventListener('change', updateActionLimitInfo);
-    // Adicionado para checar o limite assim que a faixa é selecionada
     trackSelect.addEventListener('change', updateActionLimitInfo); 
 
     cancelActionButton.addEventListener('click', () => {
