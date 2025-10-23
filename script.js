@@ -305,10 +305,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         actionModal.classList.remove('hidden');
     }
 
-    // Popula o select de Lançamentos (agora com Álbuns e Singles)
+// Popula o select de Lançamentos (agora com Álbuns e Singles)
     function populateReleaseSelect(artistId) {
+        
+        // --- INÍCIO DO DEBUG ---
+        console.log(`--- DEBUG: populateReleaseSelect ---`);
+        console.log(`Procurando lançamentos para o Artista ID:`, artistId);
+        // --- FIM DO DEBUG ---
+
         // FILTRA A LISTA UNIFICADA 'db.releases'
-        const artistReleases = db.releases.filter(r => r.artists.includes(artistId));
+        const artistReleases = db.releases.filter(r => {
+            // --- DEBUG ---
+            // Vamos logar a primeira comparação para ver o que está acontecendo
+            if (console.logCount === undefined) { 
+                console.logCount = 0; 
+            }
+            if (console.logCount < 1) { // Loga apenas o primeiro item da lista
+                console.log(`Verificando Release: '${r.name}'`);
+                console.log(`Artistas deste Release (r.artists):`, r.artists);
+                console.log(`O ID ${artistId} está incluído?`, r.artists.includes(artistId));
+                console.logCount++; // Incrementa para não logar os 40
+            }
+            // --- FIM DEBUG ---
+
+            return r.artists.includes(artistId);
+        });
+
+        // Reseta o contador de log para a próxima vez que o modal for aberto
+        console.logCount = 0; 
+        console.log(`--- FIM DEBUG: Encontrados ${artistReleases.length} lançamentos ---`);
+
+
         releaseSelect.innerHTML = '<option value="" disabled selected>Selecione um lançamento...</option>';
         
         if (artistReleases.length === 0) {
@@ -323,7 +350,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             releaseSelect.appendChild(option);
         });
     }
-
     // Popula o select de Faixas (agora com faixas de 'Músicas')
     function populateTrackSelect(releaseId) {
         // FILTRA A LISTA 'db.tracks'
