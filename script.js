@@ -109,28 +109,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ATUALIZADO: Carrega todos os dados necessários de 5 tabelas
+// ATUALIZADO: Carrega todos os dados necessários de 5 tabelas
     async function loadRequiredData() {
-        // CORREÇÃO: Nomes das tabelas
-        const artistsURL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Artists`;
-        const playersURL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Jogadores`;
-        const albumsURL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Álbums`;
-        const singlesURL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Singles e EPs`;
-        const tracksURL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Músicas`;
+        // CORREÇÃO: Nomes das tabelas com caracteres especiais/espaços precisam ser codificados
+        const artistsURL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Artists`; // ASCII, OK
+        const playersURL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Jogadores`; // ASCII, OK
+        
+        // CORRIGIDO: Adiciona encodeURIComponent para nomes de tabelas
+        const albumsURL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${encodeURIComponent('Álbums')}`;
+        const singlesURL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${encodeURIComponent('Singles e EPs')}`;
+        const tracksURL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${encodeURIComponent('Músicas')}`;
         
         const fetchOptions = { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } };
 
-        console.log("Carregando dados de 5 tabelas...");
+        console.log("Carregando dados de 5 tabelas (com URL codificada)...");
         try {
             // ATUALIZADO: Busca de 5 tabelas em paralelo
             const [artistsData, playersData, albumsData, singlesData, tracksData] = await Promise.all([
                 fetchAllAirtablePages(artistsURL, fetchOptions),
                 fetchAllAirtablePages(playersURL, fetchOptions),
-                fetchAllAirtablePages(albumsURL, fetchOptions),  // NOVO
-                fetchAllAirtablePages(singlesURL, fetchOptions), // NOVO
-                fetchAllAirtablePages(tracksURL, fetchOptions)   // NOVO
+                fetchAllAirtablePages(albumsURL, fetchOptions),  // CORRIGIDO
+                fetchAllAirtablePages(singlesURL, fetchOptions), // CORRIGIDO
+                fetchAllAirtablePages(tracksURL, fetchOptions)   // CORRIGIDO
             ]);
 
-            // 1. Processar Artistas (sem mudança, estava correto)
+            // 1. Processar Artistas
             db.artists = artistsData.records.map(record => ({
                 id: record.id,
                 name: record.fields.Name || 'Nome Indisponível',
@@ -144,7 +147,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 mv_count: record.fields.MV_Count || 0
             }));
 
-            // 2. Processar Jogadores (sem mudança, estava correto)
+            // 2. Processar Jogadores
             db.players = playersData.records.map(record => ({
                 id: record.id,
                 name: record.fields.Nome,
@@ -153,7 +156,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // 3. ATUALIZADO: Processar Lançamentos (Juntando Álbuns e Singles)
             const allReleases = [];
-            // Adiciona Álbuns
             albumsData.records.forEach(record => {
                 allReleases.push({
                     id: record.id,
@@ -161,7 +163,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     artists: record.fields.Artistas || []
                 });
             });
-            // Adiciona Singles e EPs
             singlesData.records.forEach(record => {
                 allReleases.push({
                     id: record.id,
@@ -173,15 +174,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // 4. ATUALIZADO: Processar Faixas (da tabela Músicas)
             db.tracks = tracksData.records.map(record => {
-                // Lógica para encontrar o ID do lançamento, seja de Álbum ou Single
                 const releaseId = (record.fields['Álbum'] ? record.fields['Álbum'][0] : null) || 
                                   (record.fields['Single/EP'] ? record.fields['Single/EP'][0] : null);
                 
                 return {
                     id: record.id,
                     name: record.fields.Name || 'Faixa sem nome',
-                    release: releaseId, // O ID do álbum OU single
-                    streams: record.fields.Streams || 0 // Campo 'Streams'
+                    release: releaseId,
+                    streams: record.fields.Streams || 0
                 };
             });
 
@@ -189,7 +189,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         } catch (error) {
             console.error("Erro ao carregar dados:", error);
-            artistActionsList.innerHTML = "<p>Erro ao carregar dados do Airtable.</p>";
+            artistActionsList.innerHTML = "<p>Erro ao carregar dados do Airtable. Verifique o console e as permissões do seu token.</p>";
         }
     }
 
