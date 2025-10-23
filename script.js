@@ -43,19 +43,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
 
-    // --- 1. CARREGAMENTO DE DADOS ---
+    // --- 1. CARREGAMENTO DE DADOS --- (Sem mudanças)
 
     async function fetchAllAirtablePages(baseUrl, fetchOptions) { /* ...código inalterado... */
         let allRecords = []; let offset = null;
-        do {
-            const separator = baseUrl.includes('?') ? '&' : '?'; const fetchUrl = offset ? `${baseUrl}${separator}offset=${offset}` : baseUrl;
-            const response = await fetch(fetchUrl, fetchOptions);
-            if (!response.ok) { const errorText = await response.text(); console.error(`Falha ${fetchUrl}: ${response.status} - ${errorText}`); throw new Error(`Fetch fail ${baseUrl}`); }
-            const data = await response.json(); if (data.records) { allRecords.push(...data.records); } offset = data.offset;
-        } while (offset); return { records: allRecords };
+        do { const sep = baseUrl.includes('?')?'&':'?'; const url = offset?`${baseUrl}${sep}offset=${offset}`:baseUrl; const res = await fetch(url, fetchOptions); if (!res.ok) { const txt = await res.text(); console.error(`Falha ${url}: ${res.status}-${txt}`); throw new Error(`Fetch fail ${baseUrl}`); } const data = await res.json(); if (data.records) { allRecords.push(...data.records); } offset = data.offset; } while (offset); return { records: allRecords };
      }
-
-    async function loadRequiredData() { /* ...código inalterado para carregar dados... */
+    async function loadRequiredData() { /* ...código inalterado... */
         const artistsURL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Artists`; const playersURL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Jogadores`; const albumsURL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${encodeURIComponent('Álbuns')}`; const singlesURL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${encodeURIComponent('Singles e EPs')}`; const tracksURL = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${encodeURIComponent('Músicas')}`; const fetchOptions = { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } }; console.log("Carregando dados..."); try { const [artistsData, playersData, albumsData, singlesData, tracksData] = await Promise.all([ fetchAllAirtablePages(artistsURL, fetchOptions), fetchAllAirtablePages(playersURL, fetchOptions), fetchAllAirtablePages(albumsURL, fetchOptions), fetchAllAirtablePages(singlesURL, fetchOptions), fetchAllAirtablePages(tracksURL, fetchOptions) ]); db.artists = artistsData.records.map(r => ({ id: r.id, name: r.fields['Name']||'?', RPGPoints:r.fields.RPGPoints||0, LastActive:r.fields.LastActive||null, promo_tv_count:r.fields.Promo_TV_Count||0, promo_radio_count:r.fields.Promo_Radio_Count||0, promo_commercial_count:r.fields.Promo_Commercial_Count||0, promo_internet_count:r.fields.Promo_Internet_Count||0, remix_count:r.fields.Remix_Count||0, mv_count:r.fields.MV_Count||0 })); db.players = playersData.records.map(r => ({ id: r.id, name: r.fields['Nome'], artists: r.fields['Artistas']||[] })); const allReleases = []; albumsData.records.forEach(r => allReleases.push({ id: r.id, name: r.fields['Nome do Álbum']||'Álbum?', artists: r.fields['Artista']||[] })); singlesData.records.forEach(r => allReleases.push({ id: r.id, name: r.fields['Nome do Single/EP']||'Single?', artists: r.fields['Artista']||[] })); db.releases = allReleases; db.tracks = tracksData.records.map(r => { const releaseId = (r.fields['Álbuns']?r.fields['Álbuns'][0]:null)||(r.fields['Singles e EPs']?r.fields['Singles e EPs'][0]:null); return { id: r.id, name: r.fields['Nome da Faixa']||'Faixa?', release: releaseId, streams: r.fields.Streams||0, trackType: r.fields['Tipo de Faixa']||null }; }); console.log(`Dados carregados: ${db.artists.length}a, ${db.players.length}p, ${db.releases.length}r, ${db.tracks.length}t.`); } catch (error) { console.error("Erro loadData:", error); artistActionsList.innerHTML = "<p>Erro loadData.</p>"; }
      }
 
@@ -73,10 +67,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- 3. LÓGICA DE AÇÕES RPG ---
 
     function getRandomInt(min, max) { /* ...código inalterado... */
-         min = Math.ceil(min); max = Math.floor(max); return Math.floor(Math.random() * (max - min + 1)) + min;
+        min = Math.ceil(min); max = Math.floor(max); return Math.floor(Math.random() * (max - min + 1)) + min;
      }
     function displayArtistActions() { /* ...código inalterado... */
-         if (!currentPlayer) return; const playerArtists = currentPlayer.artists.map(id => db.artists.find(a => a.id === id)).filter(Boolean).sort((a,b) => a.name.localeCompare(b.name)); if (playerArtists.length === 0) { artistActionsList.innerHTML = "<p>Nenhum artista.</p>"; return; } artistActionsList.innerHTML = playerArtists.map(artist => `<div class="artist-action-item" data-artist-id="${artist.id}"><span>${artist.name}</span><div class="artist-action-buttons"><button class="small-btn btn-open-modal">Selecionar Ação</button></div></div>`).join(''); document.querySelectorAll('.btn-open-modal').forEach(b => { b.addEventListener('click', handleOpenModalClick); });
+        if (!currentPlayer) return; const playerArtists = currentPlayer.artists.map(id => db.artists.find(a => a.id === id)).filter(Boolean).sort((a,b) => a.name.localeCompare(b.name)); if (playerArtists.length === 0) { artistActionsList.innerHTML = "<p>Nenhum artista.</p>"; return; } artistActionsList.innerHTML = playerArtists.map(artist => `<div class="artist-action-item" data-artist-id="${artist.id}"><span>${artist.name}</span><div class="artist-action-buttons"><button class="small-btn btn-open-modal">Selecionar Ação</button></div></div>`).join(''); document.querySelectorAll('.btn-open-modal').forEach(b => { b.addEventListener('click', handleOpenModalClick); });
      }
 
     // --- 4. LÓGICA DO MODAL ---
@@ -94,16 +88,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const artistId = modalArtistId.value; const actionType = actionTypeSelect.value; const artist = db.artists.find(a => a.id === artistId); if (!artist || !actionType || !ACTION_CONFIG[actionType]) { actionLimitInfo.classList.add('hidden'); return; } const config = ACTION_CONFIG[actionType]; const currentCount = artist[config.localCountKey]; const limit = config.limit; currentActionCount.textContent = currentCount; maxActionCount.textContent = limit; actionLimitInfo.classList.remove('hidden'); if (currentCount >= limit) { currentActionCount.style.color = 'var(--trend-down-red)'; confirmActionButton.disabled = true; confirmActionButton.textContent = 'Limite Atingido'; } else { currentActionCount.style.color = 'var(--text-primary)'; confirmActionButton.disabled = false; confirmActionButton.textContent = 'Confirmar Ação'; }
      }
 
-    // NOVO: Função auxiliar para dividir array em chunks
-    function chunkArray(array, chunkSize) {
-        const chunks = [];
-        for (let i = 0; i < array.length; i += chunkSize) {
-            chunks.push(array.slice(i, i + chunkSize));
-        }
-        return chunks;
-    }
+    // Função auxiliar para dividir array em chunks (sem mudança)
+    function chunkArray(array, chunkSize) { /* ...código inalterado... */
+        const chunks = []; for (let i = 0; i < array.length; i += chunkSize) { chunks.push(array.slice(i, i + chunkSize)); } return chunks;
+     }
 
-    // ATUALIZADO: Função principal agora usa chunking para PATCH de faixas
+    // ATUALIZADO: Função principal com distribuição aleatória para B-sides
     async function handleConfirmAction() {
         const artistId = modalArtistId.value;
         const trackId = trackSelect.value; // A-side ID
@@ -119,32 +109,54 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         confirmActionButton.disabled = true; confirmActionButton.textContent = 'Processando...';
 
-        const streamsToAdd = getRandomInt(config.minStreams, config.maxStreams);
+        const streamsToAdd = getRandomInt(config.minStreams, config.maxStreams); // Streams para A-side
         const newCount = currentCount + 1;
         const artistPatchBody = { fields: { [config.countField]: newCount } };
 
         const allTrackPatchData = []; // Guarda {id, fields} para todas as faixas
-        const trackUpdatesLocal = []; // Para atualizar db local
+        const trackUpdatesLocal = []; // Para atualizar db local {id, newStreams, gain?}
 
         // Dados para A-side
         const newASideStreams = selectedTrack.streams + streamsToAdd;
         allTrackPatchData.push({ id: selectedTrack.id, fields: { "Streams": newASideStreams } });
         trackUpdatesLocal.push({ id: selectedTrack.id, newStreams: newASideStreams });
 
-        let bSideStreams = 0;
+        let totalBSidePoolDistributed = 0; // Para o alerta
         let otherTracksInRelease = [];
 
         // Prepara dados para B-sides (se for promoção)
         if (config.isPromotion) {
-            bSideStreams = Math.floor(streamsToAdd * 0.30);
-            if (bSideStreams > 0) {
+            const totalBSidePool = Math.floor(streamsToAdd * 0.30); // Pool total de 30%
+
+            if (totalBSidePool > 0) {
                 const releaseId = selectedTrack.release;
                 otherTracksInRelease = db.tracks.filter(t => t.release === releaseId && t.id !== selectedTrack.id);
-                otherTracksInRelease.forEach(otherTrack => {
-                    const newOtherStreams = otherTrack.streams + bSideStreams;
-                    allTrackPatchData.push({ id: otherTrack.id, fields: { "Streams": newOtherStreams } });
-                    trackUpdatesLocal.push({ id: otherTrack.id, newStreams: newOtherStreams });
-                });
+                const numBSides = otherTracksInRelease.length;
+
+                if (numBSides > 0) {
+                    // Distribuição aleatória do pool
+                    const bSideGains = new Array(numBSides).fill(0); // Array para guardar ganhos de cada B-side
+                    for (let i = 0; i < totalBSidePool; i++) {
+                        // Escolhe um índice aleatório de B-side e adiciona 1 stream
+                        const randomIndex = Math.floor(Math.random() * numBSides);
+                        bSideGains[randomIndex]++;
+                    }
+                    totalBSidePoolDistributed = totalBSidePool; // Guarda para o alerta
+
+                    // Prepara PATCH para cada B-side com seu ganho aleatório
+                    otherTracksInRelease.forEach((otherTrack, index) => {
+                        const gain = bSideGains[index];
+                        if (gain > 0) { // Só adiciona se ganhou algo
+                            const newOtherStreams = otherTrack.streams + gain;
+                            allTrackPatchData.push({ id: otherTrack.id, fields: { "Streams": newOtherStreams } });
+                            // Guarda o ganho individual para possível uso futuro no alerta (opcional)
+                            trackUpdatesLocal.push({ id: otherTrack.id, newStreams: newOtherStreams, gain: gain });
+                        } else {
+                             // Mesmo que não ganhe streams, podemos querer atualizar localmente se a estrutura mudar
+                             trackUpdatesLocal.push({ id: otherTrack.id, newStreams: otherTrack.streams, gain: 0 });
+                        }
+                    });
+                }
             }
         }
 
@@ -153,51 +165,38 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             const artistPatchUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Artists/${artistId}`;
-            const trackPatchUrlBase = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${encodeURIComponent('Músicas')}`; // URL base para PATCH
+            const trackPatchUrlBase = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${encodeURIComponent('Músicas')}`;
 
             const fetchOptionsPatch = {
                 method: 'PATCH',
                 headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}`, 'Content-Type': 'application/json' },
             };
 
-            // Cria um array de promessas: 1 para o artista + 1 para CADA chunk de faixas
             const allPromises = [
                 fetch(artistPatchUrl, { ...fetchOptionsPatch, body: JSON.stringify(artistPatchBody) })
             ];
 
-            // Adiciona as promessas para cada chunk de faixas
             trackPatchChunks.forEach(chunk => {
                 const chunkPromise = fetch(trackPatchUrlBase, {
                     ...fetchOptionsPatch,
-                    body: JSON.stringify({ records: chunk }) // Envia o chunk atual
+                    body: JSON.stringify({ records: chunk })
                 });
                 allPromises.push(chunkPromise);
             });
 
-            // Espera todas as requisições terminarem
             const responses = await Promise.all(allPromises);
-
-            // Verifica se TODAS as respostas foram OK
             const allOk = responses.every(response => response.ok);
 
             if (!allOk) {
-                // Tenta encontrar a resposta que falhou para dar mais detalhes
                 const failedResponse = responses.find(response => !response.ok);
                 let errorDetails = failedResponse ? failedResponse.statusText : 'Erro desconhecido';
-                if (failedResponse) {
-                    try {
-                        const errorJson = await failedResponse.json();
-                        errorDetails = JSON.stringify(errorJson.error || errorJson) || errorDetails;
-                    } catch (e) { /* ignora */ }
-                }
-                 // Identifica se foi o artista ou as faixas que falharam
-                 const failedIndex = responses.findIndex(response => !response.ok);
-                 const failedEntity = failedIndex === 0 ? 'Artista' : `Faixas (chunk ${failedIndex})`; // failedIndex 0 é o artista
-
+                if (failedResponse) { try { const errorJson = await failedResponse.json(); errorDetails = JSON.stringify(errorJson.error || errorJson) || errorDetails; } catch (e) { /* ignora */ } }
+                const failedIndex = responses.findIndex(response => !response.ok);
+                const failedEntity = failedIndex === 0 ? 'Artista' : `Faixas (chunk ${failedIndex})`;
                 throw new Error(`Falha ao salvar: ${failedEntity} (${errorDetails})`);
             }
 
-            // 4. Se TUDO sucesso, atualizar o DB local
+            // Se TUDO sucesso, atualizar o DB local
             artist[config.localCountKey] = newCount;
             trackUpdatesLocal.forEach(update => {
                 const trackInDb = db.tracks.find(t => t.id === update.id);
@@ -208,8 +207,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             let alertMessage = `Ação "${actionTypeSelect.options[actionTypeSelect.selectedIndex].text}" registrada!\n\n` +
                                `+${streamsToAdd.toLocaleString('pt-BR')} streams para "${selectedTrack.name}".\n\n` +
                                `Uso: ${newCount}/${config.limit}`;
-            if (config.isPromotion && bSideStreams > 0 && otherTracksInRelease.length > 0) {
-                alertMessage += `\n\n+${bSideStreams.toLocaleString('pt-BR')} streams adicionados para ${otherTracksInRelease.length} outra(s) faixa(s).`;
+            // ATUALIZADO: Mensagem sobre a distribuição aleatória
+            if (config.isPromotion && totalBSidePoolDistributed > 0 && otherTracksInRelease.length > 0) {
+                 alertMessage += `\n\n${totalBSidePoolDistributed.toLocaleString('pt-BR')} streams foram distribuídos aleatoriamente entre ${otherTracksInRelease.length} outra(s) faixa(s).`;
             }
             alert(alertMessage);
             actionModal.classList.add('hidden');
@@ -225,7 +225,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- 5. INICIALIZAÇÃO ---
 
-    // Listeners do Modal
+    // Listeners do Modal (sem mudança)
     releaseSelect.addEventListener('change', () => { /* ...código inalterado... */
         if (releaseSelect.value) { populateTrackSelect(releaseSelect.value); } else { trackSelectWrapper.classList.add('hidden'); }
      });
@@ -235,7 +235,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     confirmActionButton.addEventListener('click', handleConfirmAction);
 
 
-    // Carga inicial
+    // Carga inicial (sem mudança)
     await loadRequiredData();
     if (db.players.length > 0 && db.artists.length > 0) {
         initializeLogin();
