@@ -32,15 +32,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Chave localStorage
     const PLAYER_ID_KEY = 'spotifyRpgActions_playerId';
 
-    // Configuração das Ações
+    // --- ATUALIZADO: Configuração das Ações ---
+    // minStreams = 0 para todos
+    // Adicionado bonusLocalKey (para db.artists) e bonusField (para Airtable)
     const ACTION_CONFIG = {
-        'promo_tv': { limit: 10, countField: 'Promo_TV_Count', localCountKey: 'promo_tv_count', minStreams: 50000, maxStreams: 100000, isPromotion: true },
-        'promo_radio': { limit: 10, countField: 'Promo_Radio_Count', localCountKey: 'promo_radio_count', minStreams: 30000, maxStreams: 70000, isPromotion: true },
-        'promo_commercial': { limit: 5, countField: 'Promo_Commercial_Count', localCountKey: 'promo_commercial_count', minStreams: 10000, maxStreams: 150000, isPromotion: true },
-        'promo_internet': { limit: 15, countField: 'Promo_Internet_Count', localCountKey: 'promo_internet_count', minStreams: 10000, maxStreams: 40000, isPromotion: true },
-        'remix': { limit: 5, countField: 'Remix_Count', localCountKey: 'remix_count', minStreams: 25000, maxStreams: 50000, isPromotion: false },
-        'mv': { limit: 3, countField: 'MV_Count', localCountKey: 'mv_count', minStreams: 70000, maxStreams: 120000, isPromotion: false }
+        'promo_tv':         { limit: 10, countField: 'Promo_TV_Count',         localCountKey: 'promo_tv_count',         minStreams: 0, maxStreams: 100000, isPromotion: true, bonusLocalKey: 'promo_tv_bonus_claimed',         bonusField: 'Promo_TV_Bonus_Claimed' },
+        'promo_radio':      { limit: 10, countField: 'Promo_Radio_Count',      localCountKey: 'promo_radio_count',      minStreams: 0, maxStreams: 70000,  isPromotion: true, bonusLocalKey: 'promo_radio_bonus_claimed',      bonusField: 'Promo_Radio_Bonus_Claimed' },
+        'promo_commercial': { limit: 5,  countField: 'Promo_Commercial_Count', localCountKey: 'promo_commercial_count', minStreams: 0, maxStreams: 150000, isPromotion: true, bonusLocalKey: 'promo_commercial_bonus_claimed', bonusField: 'Promo_Commercial_Bonus_Claimed' },
+        'promo_internet':   { limit: 15, countField: 'Promo_Internet_Count',   localCountKey: 'promo_internet_count',   minStreams: 0, maxStreams: 40000,  isPromotion: true, bonusLocalKey: 'promo_internet_bonus_claimed',   bonusField: 'Promo_Internet_Bonus_Claimed' },
+        'remix':            { limit: 5,  countField: 'Remix_Count',            localCountKey: 'remix_count',            minStreams: 0, maxStreams: 50000,  isPromotion: false, bonusLocalKey: 'remix_bonus_claimed',           bonusField: 'Remix_Bonus_Claimed' },
+        'mv':               { limit: 3,  countField: 'MV_Count',               localCountKey: 'mv_count',               minStreams: 0, maxStreams: 120000, isPromotion: false, bonusLocalKey: 'mv_bonus_claimed',              bonusField: 'MV_Bonus_Claimed' }
     };
+
+    // --- NOVO: Configuração de Punições ---
+    const PUNISHMENT_CONFIG = [
+        { message: "🚫 Opa! Você teve uma fala polêmica na tv e foi cancelada!", value: -12000 },
+        { message: "📉 Seu MV foi acusado de plágio! Que situação...", value: -20000 },
+        { message: "🔥 Vazou uma demo antiga sua e... não é boa.", value: -5000 },
+        { message: "😲 Um influencer famoso criticou sua música.", value: -15000 },
+        { message: "🤷‍♂️ A promoção não deu certo e foi ignorada pelo público.", value: -1000 }, // Punição leve
+        { message: "💔 Um membro do grupo se envolveu em um escândalo de namoro!", value: -25000 }
+    ];
+
+    /**
+     * Retorna um objeto de punição aleatório da lista.
+     */
+    function getRandomPunishment() {
+        return PUNISHMENT_CONFIG[Math.floor(Math.random() * PUNISHMENT_CONFIG.length)];
+    }
 
 
     // --- 1. CARREGAMENTO DE DADOS ---
@@ -82,40 +101,49 @@ document.addEventListener('DOMContentLoaded', async () => {
                 fetchAllAirtablePages(tracksURL, fetchOptions)
             ]);
 
-             // Verificação essencial
-             if (!artistsData || !playersData || !albumsData || !singlesData || !tracksData) {
+            // Verificação essencial
+            if (!artistsData || !playersData || !albumsData || !singlesData || !tracksData) {
                 throw new Error('Falha ao carregar um ou mais conjuntos de dados essenciais.');
             }
 
-            db.artists = artistsData.records.map(r => ({
-                id: r.id,
-                name: r.fields['Name']||'?',
-                RPGPoints:r.fields.RPGPoints||0,
-                LastActive:r.fields.LastActive||null,
-                promo_tv_count:r.fields.Promo_TV_Count||0,
-                promo_radio_count:r.fields.Promo_Radio_Count||0,
-                promo_commercial_count:r.fields.Promo_Commercial_Count||0,
-                promo_internet_count:r.fields.Promo_Internet_Count||0,
-                remix_count:r.fields.Remix_Count||0,
-                mv_count:r.fields.MV_Count||0
-            }));
+            // --- ATUALIZADO: Mapeamento dinâmico de Artistas ---
+            db.artists = artistsData.records.map(r => {
+                const artist = {
+                    id: r.id,
+                    name: r.fields['Name'] || '?',
+                    RPGPoints: r.fields.RPGPoints || 0,
+                    LastActive: r.fields.LastActive || null,
+                };
+
+                // Carrega dinamicamente todos os contadores E flags de bônus
+                // baseados no ACTION_CONFIG
+                for (const key in ACTION_CONFIG) {
+                    const config = ACTION_CONFIG[key];
+                    // Carrega o contador (ex: promo_tv_count)
+                    artist[config.localCountKey] = r.fields[config.countField] || 0;
+                    // Carrega a flag de bônus (ex: promo_tv_bonus_claimed)
+                    artist[config.bonusLocalKey] = r.fields[config.bonusField] || false;
+                }
+
+                return artist;
+            });
 
             db.players = playersData.records.map(r => ({
                 id: r.id,
                 name: r.fields['Nome'],
-                artists: r.fields['Artistas']||[]
+                artists: r.fields['Artistas'] || []
             }));
 
             const allReleases = [];
             albumsData.records.forEach(r => allReleases.push({
                 id: r.id,
-                name: r.fields['Nome do Álbum']||'Álbum?',
-                artists: r.fields['Artista']||[]
+                name: r.fields['Nome do Álbum'] || 'Álbum?',
+                artists: r.fields['Artista'] || []
             }));
             singlesData.records.forEach(r => allReleases.push({
                 id: r.id,
-                name: r.fields['Nome do Single/EP']||'Single?',
-                artists: r.fields['Artista']||[]
+                name: r.fields['Nome do Single/EP'] || 'Single?',
+                artists: r.fields['Artista'] || []
             }));
             db.releases = allReleases;
 
@@ -123,11 +151,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const releaseId = (r.fields['Álbuns']?.[0]) || (r.fields['Singles e EPs']?.[0]) || null;
                 return {
                     id: r.id,
-                    name: r.fields['Nome da Faixa']||'Faixa?',
+                    name: r.fields['Nome da Faixa'] || 'Faixa?',
                     release: releaseId,
-                    streams: r.fields.Streams||0, // Semanal
-                    totalStreams: r.fields['Streams Totais']||0, // <<< TOTAL LIDO AQUI
-                    trackType: r.fields['Tipo de Faixa']||null
+                    streams: r.fields.Streams || 0, // Semanal
+                    totalStreams: r.fields['Streams Totais'] || 0, // <<< TOTAL LIDO AQUI
+                    trackType: r.fields['Tipo de Faixa'] || null
                 };
             });
 
@@ -166,10 +194,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function initializeLogin() {
         if (!db.players || db.players.length === 0) {
-             playerSelect.innerHTML = '<option value="" disabled selected>Nenhum jogador encontrado</option>';
-             loginButton.disabled = true;
-             console.warn("Nenhum jogador carregado. Login desativado.");
-             return; // Sai se não há jogadores
+            playerSelect.innerHTML = '<option value="" disabled selected>Nenhum jogador encontrado</option>';
+            loginButton.disabled = true;
+            console.warn("Nenhum jogador carregado. Login desativado.");
+            return; // Sai se não há jogadores
         }
 
         playerSelect.innerHTML = '<option value="" disabled selected>Selecione...</option>';
@@ -205,7 +233,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const playerArtists = currentPlayer.artists
             .map(id => db.artists.find(a => a.id === id))
             .filter(Boolean) // Remove artistas não encontrados (segurança)
-            .sort((a,b) => a.name.localeCompare(b.name));
+            .sort((a, b) => a.name.localeCompare(b.name));
 
         if (playerArtists.length === 0) {
             artistActionsList.innerHTML = "<p>Você não controla nenhum artista.</p>";
@@ -252,7 +280,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
         artistReleases
-            .sort((a,b) => a.name.localeCompare(b.name))
+            .sort((a, b) => a.name.localeCompare(b.name))
             .forEach(r => {
                 const o = document.createElement('option');
                 o.value = r.id;
@@ -273,7 +301,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         releaseSingles
-            .sort((a,b) => a.name.localeCompare(b.name)) // Ordena alfabeticamente
+            .sort((a, b) => a.name.localeCompare(b.name)) // Ordena alfabeticamente
             .forEach(t => {
                 const o = document.createElement('option');
                 o.value = t.id;
@@ -308,9 +336,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             confirmActionButton.disabled = true;
             confirmActionButton.textContent = 'Limite Atingido';
         } else if (!trackId) { // Desabilita se a faixa não foi selecionada
-             currentActionCount.style.color = 'var(--text-primary)';
-             confirmActionButton.disabled = true;
-             confirmActionButton.textContent = 'Selecione a Faixa';
+            currentActionCount.style.color = 'var(--text-primary)';
+            confirmActionButton.disabled = true;
+            confirmActionButton.textContent = 'Selecione a Faixa';
         } else {
             currentActionCount.style.color = 'var(--text-primary)';
             confirmActionButton.disabled = false;
@@ -327,7 +355,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return chunks;
     }
 
-    // --- ATUALIZADO: Função principal com distribuição aleatória e atualização de Streams Totais ---
+    // --- ATUALIZADO: Função principal com Bônus/Punição/Mínimo 0 ---
     async function handleConfirmAction() {
         const artistId = modalArtistId.value;
         const trackId = trackSelect.value; // A-side ID
@@ -343,77 +371,109 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         confirmActionButton.disabled = true; confirmActionButton.textContent = 'Processando...';
 
-        const streamsToAdd = getRandomInt(config.minStreams, config.maxStreams); // Ganho para A-side
+        // --- NOVO: LÓGICA DE GANHO (BÔNUS / PUNIÇÃO / NORMAL) ---
+        let streamsToAdd = 0;
+        let eventMessage = null; // Mensagem especial para bônus ou punição
+        const bonusLocalKey = config.bonusLocalKey;
+        const bonusField = config.bonusField;
+        const hasClaimedBonus = artist[bonusLocalKey] || false;
+        
+        const bonusCheck = Math.random();
+        const punishmentCheck = Math.random();
         const newCount = currentCount + 1;
-        const artistPatchBody = { fields: { [config.countField]: newCount } };
+        const artistPatchBody = { fields: { [config.countField]: newCount } }; // Prepara o patch do artista
+
+        if (!hasClaimedBonus && bonusCheck < 0.01) {
+            // 1% DE BÔNUS (E não foi pego ainda)
+            streamsToAdd = 200000;
+            eventMessage = "🎉 JACKPOT! Você viralizou inesperadamente e ganhou +200k streams! (Bônus de categoria único)";
+            
+            // Adiciona a flag de bônus ao patch do artista
+            artistPatchBody.fields[bonusField] = true; 
+            // Atualiza localmente
+            artist[bonusLocalKey] = true; 
+
+        } else if (punishmentCheck < 0.10) {
+            // 10% DE PUNIÇÃO
+            const punishment = getRandomPunishment();
+            streamsToAdd = punishment.value; // Valor negativo
+            eventMessage = punishment.message;
+
+        } else {
+            // GANHO NORMAL (Agora com mínimo 0)
+            streamsToAdd = getRandomInt(config.minStreams, config.maxStreams);
+        }
+        // --- FIM DA LÓGICA DE GANHO ---
+
 
         const allTrackPatchData = []; // Guarda {id, fields} para PATCH no Airtable
         const trackUpdatesLocal = []; // Para atualizar db local {id, newStreams, newTotalStreams, gain?}
 
         // --- Dados para A-side ---
-        const newASideStreams = (selectedTrack.streams || 0) + streamsToAdd; // Novo Semanal
-        const newASideTotalStreams = (selectedTrack.totalStreams || 0) + streamsToAdd; // NOVO: Novo Total
+        // Garante que streams não fiquem abaixo de 0 (semanal e total)
+        const newASideStreams = Math.max(0, (selectedTrack.streams || 0) + streamsToAdd);
+        const newASideTotalStreams = Math.max(0, (selectedTrack.totalStreams || 0) + streamsToAdd);
+        
         allTrackPatchData.push({
             id: selectedTrack.id,
             fields: {
                 "Streams": newASideStreams,
-                "Streams Totais": newASideTotalStreams // NOVO: Inclui total no PATCH
+                "Streams Totais": newASideTotalStreams
             }
         });
         trackUpdatesLocal.push({
             id: selectedTrack.id,
             newStreams: newASideStreams,
-            newTotalStreams: newASideTotalStreams // NOVO: Guarda total para update local
+            newTotalStreams: newASideTotalStreams
         });
 
         let totalBSidePoolDistributed = 0;
         let otherTracksInRelease = [];
 
-        // --- Prepara dados para B-sides (se for promoção) ---
-        if (config.isPromotion) {
-            const totalBSidePool = Math.floor(streamsToAdd * 0.30); // Pool total de 30%
+        // --- Prepara dados para B-sides (se for promoção E o ganho for positivo) ---
+        // ATUALIZADO: Só distribui B-side se o streamsToAdd for positivo
+        const totalBSidePool = streamsToAdd > 0 ? Math.floor(streamsToAdd * 0.30) : 0;
 
-            if (totalBSidePool > 0) {
-                const releaseId = selectedTrack.release;
-                if(releaseId){ // Verifica se a faixa está ligada a um lançamento
-                    otherTracksInRelease = db.tracks.filter(t => t.release === releaseId && t.id !== selectedTrack.id);
-                    const numBSides = otherTracksInRelease.length;
+        if (config.isPromotion && totalBSidePool > 0) {
+            const releaseId = selectedTrack.release;
+            if (releaseId) { // Verifica se a faixa está ligada a um lançamento
+                otherTracksInRelease = db.tracks.filter(t => t.release === releaseId && t.id !== selectedTrack.id);
+                const numBSides = otherTracksInRelease.length;
 
-                    if (numBSides > 0) {
-                        const bSideGains = new Array(numBSides).fill(0);
-                        for (let i = 0; i < totalBSidePool; i++) {
-                            const randomIndex = Math.floor(Math.random() * numBSides);
-                            bSideGains[randomIndex]++;
-                        }
-                        totalBSidePoolDistributed = totalBSidePool;
-
-                        otherTracksInRelease.forEach((otherTrack, index) => {
-                            const gain = bSideGains[index];
-                            if (gain > 0) {
-                                const newOtherStreams = (otherTrack.streams || 0) + gain; // Novo Semanal
-                                const newOtherTotalStreams = (otherTrack.totalStreams || 0) + gain; // NOVO: Novo Total
-                                allTrackPatchData.push({
-                                    id: otherTrack.id,
-                                    fields: {
-                                        "Streams": newOtherStreams,
-                                        "Streams Totais": newOtherTotalStreams // NOVO: Inclui total no PATCH
-                                    }
-                                });
-                                trackUpdatesLocal.push({
-                                    id: otherTrack.id,
-                                    newStreams: newOtherStreams,
-                                    newTotalStreams: newOtherTotalStreams, // NOVO: Guarda total
-                                    gain: gain
-                                });
-                            } else {
-                                // Guarda estado atual para consistência local
-                                trackUpdatesLocal.push({ id: otherTrack.id, newStreams: otherTrack.streams, newTotalStreams: otherTrack.totalStreams, gain: 0 });
-                            }
-                        });
+                if (numBSides > 0) {
+                    const bSideGains = new Array(numBSides).fill(0);
+                    for (let i = 0; i < totalBSidePool; i++) {
+                        const randomIndex = Math.floor(Math.random() * numBSides);
+                        bSideGains[randomIndex]++;
                     }
-                } else {
-                    console.warn(`Faixa ${selectedTrack.name} (ID: ${selectedTrack.id}) não está associada a um lançamento. Distribuição para B-sides ignorada.`);
+                    totalBSidePoolDistributed = totalBSidePool;
+
+                    otherTracksInRelease.forEach((otherTrack, index) => {
+                        const gain = bSideGains[index];
+                        if (gain > 0) {
+                            // B-sides só podem ganhar, nunca perder. (E já filtramos por streamsToAdd > 0)
+                            const newOtherStreams = (otherTrack.streams || 0) + gain;
+                            const newOtherTotalStreams = (otherTrack.totalStreams || 0) + gain;
+                            allTrackPatchData.push({
+                                id: otherTrack.id,
+                                fields: {
+                                    "Streams": newOtherStreams,
+                                    "Streams Totais": newOtherTotalStreams
+                                }
+                            });
+                            trackUpdatesLocal.push({
+                                id: otherTrack.id,
+                                newStreams: newOtherStreams,
+                                newTotalStreams: newOtherTotalStreams,
+                                gain: gain
+                            });
+                        } else {
+                            trackUpdatesLocal.push({ id: otherTrack.id, newStreams: otherTrack.streams, newTotalStreams: otherTrack.totalStreams, gain: 0 });
+                        }
+                    });
                 }
+            } else {
+                console.warn(`Faixa ${selectedTrack.name} (ID: ${selectedTrack.id}) não está associada a um lançamento. Distribuição para B-sides ignorada.`);
             }
         }
 
@@ -428,6 +488,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             };
 
             const allPromises = [
+                // Envia o patch do artista (que pode conter a contagem E a flag de bônus)
                 fetch(artistPatchUrl, { ...fetchOptionsPatch, body: JSON.stringify(artistPatchBody) })
             ];
 
@@ -458,6 +519,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // --- Atualizar DB local ---
             artist[config.localCountKey] = newCount;
+            // (A flag de bônus já foi atualizada localmente lá em cima)
             trackUpdatesLocal.forEach(update => {
                 const trackInDb = db.tracks.find(t => t.id === update.id);
                 if (trackInDb) {
@@ -466,28 +528,39 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
 
-            // --- Mensagem de sucesso ---
-            let alertMessage = `Ação "${actionTypeSelect.options[actionTypeSelect.selectedIndex].text}" registrada!\n\n` +
-                               `+${streamsToAdd.toLocaleString('pt-BR')} streams para "${selectedTrack.name}".\n\n` +
-                               `Uso: ${newCount}/${config.limit}`;
-            if (config.isPromotion && totalBSidePoolDistributed > 0 && otherTracksInRelease.length > 0) {
-                 alertMessage += `\n\n${totalBSidePoolDistributed.toLocaleString('pt-BR')} streams (30%) foram distribuídos aleatoriamente entre ${otherTracksInRelease.length} outra(s) faixa(s).`;
-            } else if (config.isPromotion && totalBSidePoolDistributed > 0 && otherTracksInRelease.length === 0){
-                 alertMessage += `\n\nNão havia outras faixas no lançamento para distribuir os ${totalBSidePoolDistributed.toLocaleString('pt-BR')} streams extras.`;
+            // --- ATUALIZADO: Mensagem de sucesso ---
+            let alertMessage = `Ação "${actionTypeSelect.options[actionTypeSelect.selectedIndex].text}" registrada!\n\n`;
+            
+            if (eventMessage) {
+                alertMessage += `${eventMessage}\n\n`;
             }
+
+            // Formata o ganho/perda da A-side
+            if (streamsToAdd >= 0) {
+                 alertMessage += `+${streamsToAdd.toLocaleString('pt-BR')} streams para "${selectedTrack.name}".\n\n`;
+            } else {
+                 alertMessage += `${streamsToAdd.toLocaleString('pt-BR')} streams para "${selectedTrack.name}".\n\n`;
+            }
+
+            alertMessage += `Uso: ${newCount}/${config.limit}`;
+            
+            // Mensagem da B-side (só aparece se houve distribuição)
+            if (config.isPromotion && totalBSidePoolDistributed > 0 && otherTracksInRelease.length > 0) {
+                alertMessage += `\n\n${totalBSidePoolDistributed.toLocaleString('pt-BR')} streams (30%) foram distribuídos aleatoriamente entre ${otherTracksInRelease.length} outra(s) faixa(s).`;
+            } else if (config.isPromotion && totalBSidePoolDistributed > 0 && otherTracksInRelease.length === 0) {
+                alertMessage += `\n\nNão havia outras faixas no lançamento para distribuir os ${totalBSidePoolDistributed.toLocaleString('pt-BR')} streams extras.`;
+            }
+            
             alert(alertMessage);
             actionModal.classList.add('hidden');
-            // Opcional: Atualizar a exibição da lista de artistas se quiser mostrar contagem atualizada
-            // displayArtistActions();
 
         } catch (err) {
             console.error('Erro ao tentar persistir no Airtable:', err);
             alert(`Erro ao salvar ação: ${err.message}`);
-            // Não reverter contagem local, pois o erro foi na API
         } finally {
-             confirmActionButton.disabled = false; // Reabilita mesmo com erro
-             confirmActionButton.textContent = 'Confirmar Ação';
-             updateActionLimitInfo(); // Reavalia o estado do botão/limite
+            confirmActionButton.disabled = false; // Reabilita mesmo com erro
+            confirmActionButton.textContent = 'Confirmar Ação';
+            updateActionLimitInfo(); // Reavalia o estado do botão/limite
         }
     }
 
