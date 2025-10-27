@@ -292,11 +292,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- ATUALIZADO: populateTrackSelect ---
     // Agora busca por 'Title Track' e 'Pre-release'
+   // --- ATUALIZADO: populateTrackSelect ---
+    // Agora busca por 'Title Track' E 'Pre-release'
     function populateTrackSelect(releaseId) {
-        // ATUALIZADO: Busca faixas acionáveis (Title Track ou Pre-release)
+        
+        // ATUALIZADO: Busca faixas acionáveis (Title Track OU Pre-release)
         const actionableTypes = ['Title Track', 'Pre-release'];
-        const releaseActionableTracks = db.tracks.filter(t =>
-            t.release === releaseId &&
+        
+        const releaseActionableTracks = db.tracks.filter(t => 
+            t.release === releaseId && 
             actionableTypes.includes(t.trackType)
         );
 
@@ -304,7 +308,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (releaseActionableTracks.length === 0) {
             trackSelect.innerHTML += '<option value="" disabled>Nenhuma "Title Track" ou "Pre-release" neste lançamento</option>';
-            // Não esconde o wrapper, apenas informa que não há singles
+            trackSelectWrapper.classList.remove('hidden'); // Mostra mesmo se vazio para informar
             return;
         }
 
@@ -313,9 +317,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             .forEach(t => {
                 const o = document.createElement('option');
                 o.value = t.id;
-                o.textContent = t.name; // Mostra só o nome para manter limpo
+                // Mostra o tipo da faixa para o jogador saber o que está selecionando
+                o.textContent = `${t.name} (${t.trackType})`; 
                 trackSelect.appendChild(o);
             });
+            
         trackSelectWrapper.classList.remove('hidden'); // Mostra o seletor
     }
 
