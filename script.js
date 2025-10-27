@@ -40,8 +40,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         'promo_radio':      { limit: 10, countField: 'Promo_Radio_Count',      localCountKey: 'promo_radio_count',      minStreams: 0, maxStreams: 70000,  isPromotion: true, bonusLocalKey: 'promo_radio_bonus_claimed',      bonusField: 'Promo_Radio_Bonus_Claimed' },
         'promo_commercial': { limit: 5,  countField: 'Promo_Commercial_Count', localCountKey: 'promo_commercial_count', minStreams: 0, maxStreams: 150000, isPromotion: true, bonusLocalKey: 'promo_commercial_bonus_claimed', bonusField: 'Promo_Commercial_Bonus_Claimed' },
         'promo_internet':   { limit: 15, countField: 'Promo_Internet_Count',   localCountKey: 'promo_internet_count',   minStreams: 0, maxStreams: 40000,  isPromotion: true, bonusLocalKey: 'promo_internet_bonus_claimed',   bonusField: 'Promo_Internet_Bonus_Claimed' },
-        'remix':            { limit: 5,  countField: 'Remix_Count',            localCountKey: 'remix_count',            minStreams: 0, maxStreams: 50000,  isPromotion: false, bonusLocalKey: 'remix_bonus_claimed',           bonusField: 'Remix_Bonus_Claimed' },
-        'mv':               { limit: 3,  countField: 'MV_Count',               localCountKey: 'mv_count',               minStreams: 0, maxStreams: 120000, isPromotion: false, bonusLocalKey: 'mv_bonus_claimed',              bonusField: 'MV_Bonus_Claimed' }
+        'remix':            { limit: 5,  countField: 'Remix_Count',            localCountKey: 'remix_count',            minStreams: 0, maxStreams: 50000,  isPromotion: false, bonusLocalKey: 'remix_bonus_claimed',            bonusField: 'Remix_Bonus_Claimed' },
+        'mv':               { limit: 3,  countField: 'MV_Count',               localCountKey: 'mv_count',               minStreams: 0, maxStreams: 120000, isPromotion: false, bonusLocalKey: 'mv_bonus_claimed',               bonusField: 'MV_Bonus_Claimed' }
     };
 
     // --- NOVO: Configuração de Punições ---
@@ -155,7 +155,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     release: releaseId,
                     streams: r.fields.Streams || 0, // Semanal
                     totalStreams: r.fields['Streams Totais'] || 0, // <<< TOTAL LIDO AQUI
-                    trackType: r.fields['Tipo de Faixa'] || null
+                    // --- ATUALIZADO: Lê a lista completa de tipos ---
+                    trackType: r.fields['Tipo de Faixa'] || 'B-side' // Define 'B-side' como padrão se nulo
                 };
             });
 
@@ -289,27 +290,35 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
     }
 
+    // --- ATUALIZADO: populateTrackSelect ---
+    // Agora busca por 'Title Track' e 'Pre-release'
     function populateTrackSelect(releaseId) {
-        // Busca APENAS faixas marcadas como 'Single' (A-side) para este lançamento
-        const releaseSingles = db.tracks.filter(t => t.release === releaseId && t.trackType === 'Single');
-        trackSelect.innerHTML = '<option value="" disabled selected>Selecione a faixa "Single" (A-side)...</option>';
+        // ATUALIZADO: Busca faixas acionáveis (Title Track ou Pre-release)
+        const actionableTypes = ['Title Track', 'Pre-release'];
+        const releaseActionableTracks = db.tracks.filter(t =>
+            t.release === releaseId &&
+            actionableTypes.includes(t.trackType)
+        );
 
-        if (releaseSingles.length === 0) {
-            trackSelect.innerHTML += '<option value="" disabled>Nenhuma faixa tipo "Single" neste lançamento</option>';
+        trackSelect.innerHTML = '<option value="" disabled selected>Selecione a Faixa Título / Pre-release...</option>';
+
+        if (releaseActionableTracks.length === 0) {
+            trackSelect.innerHTML += '<option value="" disabled>Nenhuma "Title Track" ou "Pre-release" neste lançamento</option>';
             // Não esconde o wrapper, apenas informa que não há singles
             return;
         }
 
-        releaseSingles
+        releaseActionableTracks
             .sort((a, b) => a.name.localeCompare(b.name)) // Ordena alfabeticamente
             .forEach(t => {
                 const o = document.createElement('option');
                 o.value = t.id;
-                o.textContent = t.name;
+                o.textContent = t.name; // Mostra só o nome para manter limpo
                 trackSelect.appendChild(o);
             });
         trackSelectWrapper.classList.remove('hidden'); // Mostra o seletor
     }
+
 
     function updateActionLimitInfo() {
         const artistId = modalArtistId.value;
@@ -358,7 +367,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- ATUALIZADO: Função principal com Bônus/Punição/Mínimo 0 ---
     async function handleConfirmAction() {
         const artistId = modalArtistId.value;
-        const trackId = trackSelect.value; // A-side ID
+        const trackId = trackSelect.value; // ID da 'Title Track' ou 'Pre-release'
         const actionType = actionTypeSelect.value;
 
         if (!artistId || !trackId || !actionType) { alert("Selecione artista, lançamento, faixa e tipo de ação."); return; }
@@ -409,7 +418,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const allTrackPatchData = []; // Guarda {id, fields} para PATCH no Airtable
         const trackUpdatesLocal = []; // Para atualizar db local {id, newStreams, newTotalStreams, gain?}
 
-        // --- Dados para A-side ---
+        // --- Dados para A-side (Track selecionada) ---
         // Garante que streams não fiquem abaixo de 0 (semanal e total)
         const newASideStreams = Math.max(0, (selectedTrack.streams || 0) + streamsToAdd);
         const newASideTotalStreams = Math.max(0, (selectedTrack.totalStreams || 0) + streamsToAdd);
@@ -427,55 +436,71 @@ document.addEventListener('DOMContentLoaded', async () => {
             newTotalStreams: newASideTotalStreams
         });
 
-        let totalBSidePoolDistributed = 0;
+        // --- ATUALIZADO: Nova Lógica de Distribuição por Tipo de Faixa ---
         let otherTracksInRelease = [];
+        let bSideGains = 0;
+        let preReleaseGains = 0;
+        let otherGains = 0; // Para Intro/Outro/etc
 
-        // --- Prepara dados para B-sides (se for promoção E o ganho for positivo) ---
-        // ATUALIZADO: Só distribui B-side se o streamsToAdd for positivo
-        const totalBSidePool = streamsToAdd > 0 ? Math.floor(streamsToAdd * 0.30) : 0;
-
-        if (config.isPromotion && totalBSidePool > 0) {
+        // Só distribui ganhos se a ação for de promoção E o ganho for POSITIVO
+        if (config.isPromotion && streamsToAdd > 0) {
             const releaseId = selectedTrack.release;
-            if (releaseId) { // Verifica se a faixa está ligada a um lançamento
+            if (releaseId) {
                 otherTracksInRelease = db.tracks.filter(t => t.release === releaseId && t.id !== selectedTrack.id);
-                const numBSides = otherTracksInRelease.length;
 
-                if (numBSides > 0) {
-                    const bSideGains = new Array(numBSides).fill(0);
-                    for (let i = 0; i < totalBSidePool; i++) {
-                        const randomIndex = Math.floor(Math.random() * numBSides);
-                        bSideGains[randomIndex]++;
+                // Define os tipos para facilitar
+                const bSideTypes = ['B-side'];
+                const preReleaseTypes = ['Pre-release'];
+                const minorTypes = ['Intro', 'Outro', 'Skit', 'Interlude'];
+
+                otherTracksInRelease.forEach(otherTrack => {
+                    let gain = 0;
+                    
+                    if (bSideTypes.includes(otherTrack.trackType)) {
+                        // B-sides ganham 30% do ganho principal
+                        gain = Math.floor(streamsToAdd * 0.30);
+                        bSideGains += gain;
+                    } 
+                    else if (preReleaseTypes.includes(otherTrack.trackType)) {
+                        // Pre-releases (outras) ganham 95%
+                        gain = Math.floor(streamsToAdd * 0.95);
+                        preReleaseGains += gain;
                     }
-                    totalBSidePoolDistributed = totalBSidePool;
+                    else if (minorTypes.includes(otherTrack.trackType)) {
+                        // Intro/Outro/etc ganham 10%
+                        gain = Math.floor(streamsToAdd * 0.10);
+                        otherGains += gain;
+                    }
 
-                    otherTracksInRelease.forEach((otherTrack, index) => {
-                        const gain = bSideGains[index];
-                        if (gain > 0) {
-                            // B-sides só podem ganhar, nunca perder. (E já filtramos por streamsToAdd > 0)
-                            const newOtherStreams = (otherTrack.streams || 0) + gain;
-                            const newOtherTotalStreams = (otherTrack.totalStreams || 0) + gain;
-                            allTrackPatchData.push({
-                                id: otherTrack.id,
-                                fields: {
-                                    "Streams": newOtherStreams,
-                                    "Streams Totais": newOtherTotalStreams
-                                }
-                            });
-                            trackUpdatesLocal.push({
-                                id: otherTrack.id,
-                                newStreams: newOtherStreams,
-                                newTotalStreams: newOtherTotalStreams,
-                                gain: gain
-                            });
-                        } else {
-                            trackUpdatesLocal.push({ id: otherTrack.id, newStreams: otherTrack.streams, newTotalStreams: otherTrack.totalStreams, gain: 0 });
-                        }
-                    });
-                }
+                    // Se houve ganho, prepara o patch
+                    if (gain > 0) {
+                        // Streams bônus só podem ser positivos
+                        const newOtherStreams = (otherTrack.streams || 0) + gain;
+                        const newOtherTotalStreams = (otherTrack.totalStreams || 0) + gain;
+                        
+                        allTrackPatchData.push({
+                            id: otherTrack.id,
+                            fields: {
+                                "Streams": newOtherStreams,
+                                "Streams Totais": newOtherTotalStreams
+                            }
+                        });
+                        
+                        // Atualiza o local (usado para o 'alert' e para o db local)
+                        trackUpdatesLocal.push({
+                            id: otherTrack.id,
+                            newStreams: newOtherStreams,
+                            newTotalStreams: newOtherTotalStreams,
+                            gain: gain // Armazena o ganho para o alert
+                        });
+                    }
+                }); // fim do forEach
+
             } else {
-                console.warn(`Faixa ${selectedTrack.name} (ID: ${selectedTrack.id}) não está associada a um lançamento. Distribuição para B-sides ignorada.`);
+                console.warn(`Faixa ${selectedTrack.name} (ID: ${selectedTrack.id}) não está associada a um lançamento. Distribuição ignorada.`);
             }
         }
+        // --- FIM DA NOVA LÓGICA DE DISTRIBUIÇÃO ---
 
         const trackPatchChunks = chunkArray(allTrackPatchData, 10);
 
@@ -544,11 +569,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             alertMessage += `Uso: ${newCount}/${config.limit}`;
             
-            // Mensagem da B-side (só aparece se houve distribuição)
-            if (config.isPromotion && totalBSidePoolDistributed > 0 && otherTracksInRelease.length > 0) {
-                alertMessage += `\n\n${totalBSidePoolDistributed.toLocaleString('pt-BR')} streams (30%) foram distribuídos aleatoriamente entre ${otherTracksInRelease.length} outra(s) faixa(s).`;
-            } else if (config.isPromotion && totalBSidePoolDistributed > 0 && otherTracksInRelease.length === 0) {
-                alertMessage += `\n\nNão havia outras faixas no lançamento para distribuir os ${totalBSidePoolDistributed.toLocaleString('pt-BR')} streams extras.`;
+            // --- ATUALIZADO: Mensagens de Bônus por tipo ---
+            if (config.isPromotion && streamsToAdd > 0) {
+                if (bSideGains > 0) {
+                    alertMessage += `\n\n+${bSideGains.toLocaleString('pt-BR')} streams distribuídos para B-side(s) (30%).`;
+                }
+                if (preReleaseGains > 0) {
+                    alertMessage += `\n\n+${preReleaseGains.toLocaleString('pt-BR')} streams distribuídos para Pre-release(s) (95%).`;
+                }
+                if (otherGains > 0) {
+                    alertMessage += `\n\n+${otherGains.toLocaleString('pt-BR')} streams distribuídos para Intro/Outro/etc (10%).`;
+                }
+                
+                // Se não ganhou nada mas existiam outras faixas
+                if (bSideGains === 0 && preReleaseGains === 0 && otherGains === 0 && otherTracksInRelease.length > 0) {
+                     alertMessage += `\n\n(Nenhuma faixa bônus elegível foi encontrada para receber streams extras).`;
+                }
             }
             
             alert(alertMessage);
