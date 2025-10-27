@@ -11,7 +11,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Elementos da UI
     const loginPrompt = document.getElementById('loginPrompt');
     const loggedInInfo = document.getElementById('loggedInInfo');
-    const playerSelect = document.getElementById('playerSelect');
+    
+    // playerSelect NÃO será usado para o login principal, mas é pego se necessário
+    const playerSelect = document.getElementById('playerSelect'); 
+    
     const loginButton = document.getElementById('loginButton');
     const logoutButton = document.getElementById('logoutButton');
     const actionsWrapper = document.getElementById('actionsWrapper');
@@ -30,7 +33,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const maxActionCount = document.getElementById('maxActionCount');
 
     // Chave localStorage
-    const PLAYER_ID_KEY = 'spotifyRpgActions_playerId';
+    const PLAYER_NAME_KEY = 'spotifyRpgActions_playerName'; // Mudado para nome para persistência
 
     // --- Configuração das Ações ---
     const ACTION_CONFIG = {
@@ -113,12 +116,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
                 return artist;
             });
-
+            
+            // ==================================
+            // ========== JS ALTERADO =========
+            // ==================================
+            // Busca o nome, SENHA e artistas de cada jogador
             db.players = playersData.records.map(r => ({
                 id: r.id,
                 name: r.fields['Nome'],
+                password: r.fields.Senha, // <-- BUSCA A SENHA
                 artists: r.fields['Artistas'] || []
             }));
+            // ==================================
+            // ======== FIM DA ALTERAÇÃO ========
+            // ==================================
 
             const allReleases = [];
             albumsData.records.forEach(r => allReleases.push({
@@ -133,7 +144,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }));
             db.releases = allReleases;
 
-            // --- ATUALIZADO: db.tracks agora carrega TODOS os artistas e tipo de colaboração ---
             db.tracks = tracksData.records.map(r => {
                 const releaseId = (r.fields['Álbuns']?.[0]) || (r.fields['Singles e EPs']?.[0]) || null;
                 return {
@@ -157,58 +167,97 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // --- 2. LÓGICA DE LOGIN ---
-    function loginPlayer(playerId) {
-        currentPlayer = db.players.find(p => p.id === playerId);
-        if (!currentPlayer) {
-            console.error(`Jogador ${playerId} não encontrado.`);
-            logoutPlayer(); 
+    
+    // ==================================
+    // ========== JS ALTERADO =========
+    // ==================================
+    // Função reescrita para aceitar usuário/senha em vez de playerId
+    function loginPlayer(username, password) {
+         if (!username || !password) {
+            alert("Por favor, insira nome de usuário e senha.");
             return;
         }
-        localStorage.setItem(PLAYER_ID_KEY, playerId);
-        document.getElementById('playerName').textContent = currentPlayer.name;
-        loginPrompt.classList.add('hidden');
-        loggedInInfo.classList.remove('hidden');
-        actionsWrapper.classList.remove('hidden');
-        displayArtistActions();
+
+        // Procura o jogador pelo nome de usuário (ignorando maiúsculas/minúsculas)
+        const foundPlayer = db.players.find(p => p.name.toLowerCase() === username.toLowerCase());
+
+        // Verifica se o jogador foi encontrado E se a senha bate
+        if (foundPlayer && foundPlayer.password === password) {
+            // Sucesso
+            currentPlayer = foundPlayer;
+            localStorage.setItem(PLAYER_NAME_KEY, currentPlayer.name); // Salva o nome para persistência
+            document.getElementById('playerName').textContent = currentPlayer.name;
+            loginPrompt.classList.add('hidden');
+            loggedInInfo.classList.remove('hidden');
+            actionsWrapper.classList.remove('hidden');
+            displayArtistActions();
+        } else {
+            // Falha
+            alert("Usuário ou senha inválidos.");
+            // Limpa o campo de senha por segurança
+            document.getElementById('passwordInput').value = '';
+        }
     }
+    // ==================================
+    // ======== FIM DA ALTERAÇÃO ========
+    // ==================================
 
     function logoutPlayer() {
         currentPlayer = null;
-        localStorage.removeItem(PLAYER_ID_KEY);
+        localStorage.removeItem(PLAYER_NAME_KEY);
         loginPrompt.classList.remove('hidden');
         loggedInInfo.classList.add('hidden');
         actionsWrapper.classList.add('hidden');
         artistActionsList.innerHTML = "<p>Faça login para ver as ações.</p>";
+        
+        // Limpa os campos de login ao sair
+        document.getElementById('usernameInput').value = '';
+        document.getElementById('passwordInput').value = '';
     }
 
+    // ==================================
+    // ========== JS ALTERADO =========
+    // ==================================
+    // Função atualizada para usar os inputs e persistência pelo nome
     function initializeLogin() {
         if (!db.players || db.players.length === 0) {
-            playerSelect.innerHTML = '<option value="" disabled selected>Nenhum jogador encontrado</option>';
-            loginButton.disabled = true;
+            loginPrompt.innerHTML = '<p style="color:red;">Nenhum jogador encontrado no sistema.</p>';
             console.warn("Nenhum jogador carregado. Login desativado.");
             return; 
         }
 
-        playerSelect.innerHTML = '<option value="" disabled selected>Selecione...</option>';
-        db.players.sort((a, b) => (a.name || '').localeCompare(b.name || '')).forEach(p => {
-            const o = document.createElement('option');
-            o.value = p.id;
-            o.textContent = p.name;
-            playerSelect.appendChild(o);
-        });
-
+        // Não preenchemos mais o select
+        
         loginButton.addEventListener('click', () => {
-            if (playerSelect.value) loginPlayer(playerSelect.value);
+             const username = document.getElementById('usernameInput').value;
+             const password = document.getElementById('passwordInput').value;
+             loginPlayer(username, password);
         });
         logoutButton.addEventListener('click', logoutPlayer);
 
-        const storedId = localStorage.getItem(PLAYER_ID_KEY);
-        if (storedId && db.players.some(p => p.id === storedId)) { 
-            loginPlayer(storedId);
+        // Tenta logar automaticamente com o nome salvo, se houver
+        const storedName = localStorage.getItem(PLAYER_NAME_KEY);
+        if (storedName) {
+            const storedPlayer = db.players.find(p => p.name === storedName);
+            if (storedPlayer) {
+                // Simula um login bem-sucedido (sem precisar da senha novamente)
+                currentPlayer = storedPlayer; 
+                localStorage.setItem(PLAYER_NAME_KEY, currentPlayer.name); 
+                document.getElementById('playerName').textContent = currentPlayer.name;
+                loginPrompt.classList.add('hidden');
+                loggedInInfo.classList.remove('hidden');
+                actionsWrapper.classList.remove('hidden');
+                displayArtistActions();
+            } else {
+                logoutPlayer(); // Limpa se o nome salvo não existe mais
+            }
         } else {
-            logoutPlayer(); 
+           logoutPlayer(); // Garante estado inicial de logout
         }
     }
+    // ==================================
+    // ======== FIM DA ALTERAÇÃO ========
+    // ==================================
 
     // --- 3. LÓGICA DE AÇÕES RPG ---
     function getRandomInt(min, max) {
@@ -251,7 +300,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         modalArtistName.textContent = artist.name;
         modalArtistId.value = artist.id;
 
-        // --- ATUALIZADO: Esta função agora encontra lançamentos principais E feats ---
         populateReleaseSelect(artist.id); 
         
         actionTypeSelect.value = ""; 
@@ -263,36 +311,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         actionModal.classList.remove('hidden');
     }
 
-    // --- ATUALIZADO: populateReleaseSelect ---
-    // Agora encontra lançamentos onde o artista é principal (ou Dueto)
-    // E também lançamentos onde ele é "Feat." em uma faixa acionável.
     function populateReleaseSelect(artistId) {
-        // 1. Encontra lançamentos onde o artista é principal (ou Dueto)
         const mainArtistReleases = db.releases.filter(r => r.artists && r.artists.includes(artistId));
         const mainArtistReleaseIds = new Set(mainArtistReleases.map(r => r.id));
 
-        // 2. Encontra lançamentos onde o artista é "Feat."
         const featuredReleaseIds = new Set();
         const actionableTypes = ['Title Track', 'Pre-release'];
         
         db.tracks.forEach(track => {
-            // Se a faixa tem um release, o artista está na lista de artistas, E é uma faixa acionável
             if (track.release && 
                 track.artistIds.includes(artistId) && 
                 actionableTypes.includes(track.trackType)) {
                 
-                // Adiciona o ID do release à lista
                 featuredReleaseIds.add(track.release);
             }
         });
 
-        // 3. Combina as duas listas (sem duplicatas)
         const allReleaseIds = new Set([...mainArtistReleaseIds, ...featuredReleaseIds]);
         
-        // 4. Busca os objetos de release completos
         const allReleases = db.releases.filter(r => allReleaseIds.has(r.id));
         
-        // 5. Popula o <select>
         releaseSelect.innerHTML = '<option value="" disabled selected>Selecione o Single/EP/Álbum...</option>';
         if (allReleases.length === 0) {
             releaseSelect.innerHTML += '<option value="" disabled>Nenhum lançamento encontrado</option>';
@@ -309,13 +347,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
     }
 
-    // --- ATUALIZADO: populateTrackSelect ---
-    // Agora aceita artistId e filtra faixas que o artista pode promover
     function populateTrackSelect(releaseId, artistId) {
         
         const actionableTypes = ['Title Track', 'Pre-release'];
         
-        // Encontra faixas acionáveis NESSES release ONDE o artista está (seja main ou feat)
         const releaseActionableTracks = db.tracks.filter(t => 
             t.release === releaseId && 
             actionableTypes.includes(t.trackType) &&
@@ -335,7 +370,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             .forEach(t => {
                 const o = document.createElement('option');
                 o.value = t.id;
-                // Mostra o tipo da faixa para o jogador saber o que está selecionando
                 o.textContent = `${t.name} (${t.trackType})`; 
                 trackSelect.appendChild(o);
             });
@@ -343,8 +377,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         trackSelectWrapper.classList.remove('hidden'); // Mostra o seletor
     }
 
-    // --- ATUALIZADO: updateActionLimitInfo ---
-    // Agora verifica se é "Feat." (limite 3) ou "Main/Dueto" (limite normal)
     function updateActionLimitInfo() {
         const artistId = modalArtistId.value;
         const actionType = actionTypeSelect.value;
@@ -359,7 +391,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         const config = ACTION_CONFIG[actionType];
         
-        // Se a faixa não foi selecionada, desabilita mas mostra o limite padrão
         if (!trackId) {
             actionLimitInfo.classList.add('hidden'); // Esconde se não há faixa
             confirmActionButton.disabled = true;
@@ -374,10 +405,7 @@ document.addEventListener('DOMContentLoaded', async () => {
              return;
         }
 
-        // --- LÓGICA DE LIMITE ---
-        // É "Main" se for o primeiro artista da lista OU se for "Dueto/Grupo"
         const isMain = track.artistIds[0] === artistId || track.collabType === 'Dueto/Grupo';
-        // O limite é o padrão (ex: 10) se for Main, ou 3 se for Feat.
         const limit = isMain ? config.limit : 3; 
         
         const currentCount = artist[config.localCountKey] || 0; 
@@ -406,8 +434,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         return chunks;
     }
 
-    // --- ATUALIZADO: handleConfirmAction ---
-    // Verifica o limite (3 ou normal) e distribui B-side APENAS se for Main/Dueto
     async function handleConfirmAction() {
         const artistId = modalArtistId.value;
         const trackId = trackSelect.value; 
@@ -419,7 +445,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const config = ACTION_CONFIG[actionType];
         if (!artist || !selectedTrack || !config) { alert("Erro: Dados inválidos (artista, faixa ou config)."); return; }
 
-        // --- LÓGICA DE LIMITE (Repetida para segurança) ---
         const isMain = selectedTrack.artistIds[0] === artistId || selectedTrack.collabType === 'Dueto/Grupo';
         const limit = isMain ? config.limit : 3;
         const currentCount = artist[config.localCountKey] || 0;
@@ -431,7 +456,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         confirmActionButton.disabled = true; confirmActionButton.textContent = 'Processando...';
 
-        // --- LÓGICA DE GANHO (BÔNUS / PUNIÇÃO / NORMAL) ---
         let streamsToAdd = 0;
         let eventMessage = null; 
         const bonusLocalKey = config.bonusLocalKey;
@@ -459,7 +483,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const allTrackPatchData = []; 
         const trackUpdatesLocal = []; 
 
-        // --- Dados para A-side (Track selecionada) ---
         const newASideStreams = Math.max(0, (selectedTrack.streams || 0) + streamsToAdd);
         const newASideTotalStreams = Math.max(0, (selectedTrack.totalStreams || 0) + streamsToAdd);
         
@@ -476,13 +499,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             newTotalStreams: newASideTotalStreams
         });
 
-        // --- LÓGICA DE DISTRIBUIÇÃO B-SIDE ---
         let otherTracksInRelease = [];
         let bSideGains = 0;
         let preReleaseGains = 0;
         let otherGains = 0; 
 
-        // --- ATUALIZADO: Só distribui se for PROMOÇÃO, ganho POSITIVO e artista for MAIN/DUETO ---
         if (config.isPromotion && streamsToAdd > 0 && isMain) {
             const releaseId = selectedTrack.release;
             if (releaseId) {
@@ -526,7 +547,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.warn(`Faixa ${selectedTrack.name} (ID: ${selectedTrack.id}) não está associada a um lançamento. Distribuição ignorada.`);
             }
         } 
-        // Se for "Feat." (isMain = false), este bloco é pulado e B-sides não ganham nada.
 
         const trackPatchChunks = chunkArray(allTrackPatchData, 10);
 
@@ -566,7 +586,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 throw new Error(`Falha ao salvar: ${failedEntity} (${errorDetails})`);
             }
 
-            // --- Atualizar DB local ---
             artist[config.localCountKey] = newCount;
             trackUpdatesLocal.forEach(update => {
                 const trackInDb = db.tracks.find(t => t.id === update.id);
@@ -576,7 +595,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
 
-            // --- Mensagem de sucesso ---
             let alertMessage = `Ação "${actionTypeSelect.options[actionTypeSelect.selectedIndex].text}" registrada!\n\n`;
             if (eventMessage) {
                 alertMessage += `${eventMessage}\n\n`;
@@ -588,15 +606,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                  alertMessage += `${streamsToAdd.toLocaleString('pt-BR')} streams para "${selectedTrack.name}".\n\n`;
             }
 
-            // ATUALIZADO: Mostra o limite dinâmico (3 ou normal)
             alertMessage += `Uso: ${newCount}/${limit}`;
             
-            // ATUALIZADO: Adiciona aviso se for "Feat."
             if (!isMain) {
                 alertMessage += ` (Limite de 3 usos para participações "Feat.")`;
             }
 
-            // Mensagens de Bônus (só aparecem se isMain = true)
             if (config.isPromotion && streamsToAdd > 0 && isMain) {
                 if (bSideGains > 0) {
                     alertMessage += `\n\n+${bSideGains.toLocaleString('pt-BR')} streams distribuídos para B-side(s) (30%).`;
@@ -625,7 +640,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- 5. INICIALIZAÇÃO ---
     // Listeners do Modal
     releaseSelect.addEventListener('change', () => {
-        // --- ATUALIZADO: Passa o artistId para popular as faixas corretamente ---
         const artistId = modalArtistId.value;
         if (releaseSelect.value && artistId) {
             populateTrackSelect(releaseSelect.value, artistId);
