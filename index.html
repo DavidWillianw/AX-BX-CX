@@ -14,10 +14,14 @@
 
         <div class="studio-login-wrapper">
             <div id="loginPrompt">
-                <label for="playerSelect">Quem é você?</label>
-                <select id="playerSelect">
-                    <option value="">Carregando jogadores...</option>
-                </select>
+                <div class="studio-form-group">
+                    <label for="usernameInput">Nome de Usuário</label>
+                    <input type="text" id="usernameInput" placeholder="Seu nome de jogador" required />
+                </div>
+                <div class="studio-form-group">
+                    <label for="passwordInput">Senha</label>
+                    <input type="password" id="passwordInput" placeholder="Sua senha" required />
+                </div>
                 <button class="submit-btn" id="loginButton">Entrar</button>
             </div>
             <div id="loggedInInfo" class="hidden">
