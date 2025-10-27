@@ -190,7 +190,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         playerSelect.innerHTML = '<option value="" disabled selected>Selecione...</option>';
-        db.players.sort((a, b) => a.name.localeCompare(b.name)).forEach(p => {
+        db.players.sort((a, b) => (a.name || '').localeCompare(b.name || '')).forEach(p => {
             const o = document.createElement('option');
             o.value = p.id;
             o.textContent = p.name;
