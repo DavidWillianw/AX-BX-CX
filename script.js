@@ -11,10 +11,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Elementos da UI
     const loginPrompt = document.getElementById('loginPrompt');
     const loggedInInfo = document.getElementById('loggedInInfo');
-    
+
     // playerSelect NÃO será usado para o login principal, mas é pego se necessário
-    const playerSelect = document.getElementById('playerSelect'); 
-    
+    const playerSelect = document.getElementById('playerSelect');
+
     const loginButton = document.getElementById('loginButton');
     const logoutButton = document.getElementById('logoutButton');
     const actionsWrapper = document.getElementById('actionsWrapper');
@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
                 return artist;
             });
-            
+
             db.players = playersData.records.map(r => ({
                 id: r.id,
                 name: r.fields['Nome'],
@@ -190,7 +190,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         loggedInInfo.classList.add('hidden');
         actionsWrapper.classList.add('hidden');
         artistActionsList.innerHTML = "<p>Faça login para ver as ações.</p>";
-        
+
         document.getElementById('usernameInput').value = '';
         document.getElementById('passwordInput').value = '';
     }
@@ -199,9 +199,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!db.players || db.players.length === 0) {
             loginPrompt.innerHTML = '<p style="color:red;">Nenhum jogador encontrado no sistema.</p>';
             console.warn("Nenhum jogador carregado. Login desativado.");
-            return; 
+            return;
         }
-        
+
         loginButton.addEventListener('click', () => {
              const username = document.getElementById('usernameInput').value;
              const password = document.getElementById('passwordInput').value;
@@ -213,18 +213,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (storedName) {
             const storedPlayer = db.players.find(p => p.name === storedName);
             if (storedPlayer) {
-                currentPlayer = storedPlayer; 
-                localStorage.setItem(PLAYER_NAME_KEY, currentPlayer.name); 
+                currentPlayer = storedPlayer;
+                localStorage.setItem(PLAYER_NAME_KEY, currentPlayer.name);
                 document.getElementById('playerName').textContent = currentPlayer.name;
                 loginPrompt.classList.add('hidden');
                 loggedInInfo.classList.remove('hidden');
                 actionsWrapper.classList.remove('hidden');
                 displayArtistActions();
             } else {
-                logoutPlayer(); 
+                logoutPlayer();
             }
         } else {
-           logoutPlayer(); 
+           logoutPlayer();
         }
     }
 
@@ -235,11 +235,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
+    // Função auxiliar para gerar float aleatório num intervalo
+    function getRandomFloat(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+
     function displayArtistActions() {
         if (!currentPlayer) return;
         const playerArtists = currentPlayer.artists
             .map(id => db.artists.find(a => a.id === id))
-            .filter(Boolean) 
+            .filter(Boolean)
             .sort((a, b) => a.name.localeCompare(b.name));
 
         if (playerArtists.length === 0) {
@@ -269,13 +274,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         modalArtistName.textContent = artist.name;
         modalArtistId.value = artist.id;
 
-        populateReleaseSelect(artist.id); 
-        
-        actionTypeSelect.value = ""; 
-        trackSelect.innerHTML = '<option value="" disabled selected>Selecione um lançamento primeiro</option>'; 
-        trackSelectWrapper.classList.add('hidden'); 
-        actionLimitInfo.classList.add('hidden'); 
-        confirmActionButton.disabled = true; 
+        populateReleaseSelect(artist.id);
+
+        actionTypeSelect.value = "";
+        trackSelect.innerHTML = '<option value="" disabled selected>Selecione um lançamento primeiro</option>';
+        trackSelectWrapper.classList.add('hidden');
+        actionLimitInfo.classList.add('hidden');
+        confirmActionButton.disabled = true;
         confirmActionButton.textContent = 'Confirmar Ação';
         actionModal.classList.remove('hidden');
     }
@@ -286,26 +291,26 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const featuredReleaseIds = new Set();
         const actionableTypes = ['Title Track', 'Pre-release'];
-        
+
         db.tracks.forEach(track => {
-            if (track.release && 
-                track.artistIds.includes(artistId) && 
+            if (track.release &&
+                track.artistIds.includes(artistId) &&
                 actionableTypes.includes(track.trackType)) {
-                
+
                 featuredReleaseIds.add(track.release);
             }
         });
 
         const allReleaseIds = new Set([...mainArtistReleaseIds, ...featuredReleaseIds]);
-        
+
         const allReleases = db.releases.filter(r => allReleaseIds.has(r.id));
-        
+
         releaseSelect.innerHTML = '<option value="" disabled selected>Selecione o Single/EP/Álbum...</option>';
         if (allReleases.length === 0) {
             releaseSelect.innerHTML += '<option value="" disabled>Nenhum lançamento encontrado</option>';
             return;
         }
-        
+
         allReleases
             .sort((a, b) => a.name.localeCompare(b.name))
             .forEach(r => {
@@ -317,11 +322,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function populateTrackSelect(releaseId, artistId) {
-        
+
         const actionableTypes = ['Title Track', 'Pre-release'];
-        
-        const releaseActionableTracks = db.tracks.filter(t => 
-            t.release === releaseId && 
+
+        const releaseActionableTracks = db.tracks.filter(t =>
+            t.release === releaseId &&
             actionableTypes.includes(t.trackType) &&
             t.artistIds.includes(artistId) // <-- O artista LOGADO tem que estar na faixa
         );
@@ -339,10 +344,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             .forEach(t => {
                 const o = document.createElement('option');
                 o.value = t.id;
-                o.textContent = `${t.name} (${t.trackType})`; 
+                o.textContent = `${t.name} (${t.trackType})`;
                 trackSelect.appendChild(o);
             });
-            
+
         trackSelectWrapper.classList.remove('hidden'); // Mostra o seletor
     }
 
@@ -351,15 +356,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         const actionType = actionTypeSelect.value;
         const trackId = trackSelect.value; // Verifica se a faixa foi selecionada
         const artist = db.artists.find(a => a.id === artistId);
-        
+
         if (!artist || !actionType || !ACTION_CONFIG[actionType]) {
             actionLimitInfo.classList.add('hidden');
             confirmActionButton.disabled = true;
             return;
         }
-        
+
         const config = ACTION_CONFIG[actionType];
-        
+
         if (!trackId) {
             actionLimitInfo.classList.add('hidden'); // Esconde se não há faixa
             confirmActionButton.disabled = true;
@@ -375,9 +380,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         const isMain = track.artistIds[0] === artistId || track.collabType === 'Dueto/Grupo';
-        const limit = isMain ? config.limit : 3; 
-        
-        const currentCount = artist[config.localCountKey] || 0; 
+        const limit = isMain ? config.limit : 3;
+
+        const currentCount = artist[config.localCountKey] || 0;
 
         currentActionCount.textContent = currentCount;
         maxActionCount.textContent = limit;
@@ -404,12 +409,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ==================================
-    // ========== JS ALTERADO =========
+    // === handleConfirmAction ATUALIZADO ===
     // ==================================
-    // Modificado handleConfirmAction para randomizar ganhos de B-side/Minor
     async function handleConfirmAction() {
         const artistId = modalArtistId.value;
-        const trackId = trackSelect.value; 
+        const trackId = trackSelect.value;
         const actionType = actionTypeSelect.value;
 
         if (!artistId || !trackId || !actionType) { alert("Selecione artista, lançamento, faixa e tipo de ação."); return; }
@@ -421,31 +425,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         const isMain = selectedTrack.artistIds[0] === artistId || selectedTrack.collabType === 'Dueto/Grupo';
         const limit = isMain ? config.limit : 3;
         const currentCount = artist[config.localCountKey] || 0;
-        
+
         if (currentCount >= limit) {
-            alert("Limite de uso para esta ação já foi atingido."); 
+            alert("Limite de uso para esta ação já foi atingido.");
             return;
         }
 
         confirmActionButton.disabled = true; confirmActionButton.textContent = 'Processando...';
 
         let streamsToAdd = 0; // Ganho da faixa principal
-        let eventMessage = null; 
+        let eventMessage = null;
         const bonusLocalKey = config.bonusLocalKey;
         const bonusField = config.bonusField;
         const hasClaimedBonus = artist[bonusLocalKey] || false;
-        
+
         const bonusCheck = Math.random();
         const punishmentCheck = Math.random();
         const newCount = currentCount + 1;
-        const artistPatchBody = { fields: { [config.countField]: newCount } }; 
+        const artistPatchBody = { fields: { [config.countField]: newCount } };
 
         // Calcula o ganho da faixa principal
         if (!hasClaimedBonus && bonusCheck < 0.01) { // 1% chance de Jackpot
             streamsToAdd = 200000;
             eventMessage = "🎉 JACKPOT! Você viralizou inesperadamente e ganhou +200k streams! (Bônus de categoria único)";
-            artistPatchBody.fields[bonusField] = true; 
-            artist[bonusLocalKey] = true; 
+            artistPatchBody.fields[bonusField] = true;
+            artist[bonusLocalKey] = true;
         } else if (punishmentCheck < 0.10) { // 10% chance de Punição
             const punishment = getRandomPunishment();
             streamsToAdd = punishment.value;
@@ -453,14 +457,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else { // Ganho normal
             streamsToAdd = getRandomInt(config.minStreams, config.maxStreams);
         }
-        
-        const allTrackPatchData = []; 
-        const trackUpdatesLocal = []; 
+
+        const allTrackPatchData = [];
+        const trackUpdatesLocal = [];
 
         // Aplica o ganho à faixa principal (A-Side)
         const newASideStreams = Math.max(0, (selectedTrack.streams || 0) + streamsToAdd);
         const newASideTotalStreams = Math.max(0, (selectedTrack.totalStreams || 0) + streamsToAdd);
-        
+
         allTrackPatchData.push({
             id: selectedTrack.id,
             fields: {
@@ -474,9 +478,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             newTotalStreams: newASideTotalStreams
         });
 
-        // --- LÓGICA DE DISTRIBUIÇÃO B-SIDE/MINOR (MODIFICADA) ---
+        // --- LÓGICA DE DISTRIBUIÇÃO B-SIDE/MINOR/PRE-RELEASE (ATUALIZADA) ---
         let otherTracksInRelease = [];
         let totalDistributedGain = 0; // Para somar o ganho total distribuído
+        let distributionDetails = []; // Para armazenar detalhes da distribuição
 
         // Só distribui se for PROMOÇÃO, ganho POSITIVO e artista for MAIN/DUETO
         if (config.isPromotion && streamsToAdd > 0 && isMain) {
@@ -485,25 +490,31 @@ document.addEventListener('DOMContentLoaded', async () => {
                 otherTracksInRelease = db.tracks.filter(t => t.release === releaseId && t.id !== selectedTrack.id);
 
                 const bSideTypes = ['B-side'];
-                const preReleaseTypes = ['Pre-release']; // Pre-releases ainda recebem fixo
+                const preReleaseTypes = ['Pre-release']; // Pre-releases (que não são a principal)
                 const minorTypes = ['Intro', 'Outro', 'Skit', 'Interlude'];
 
                 otherTracksInRelease.forEach(otherTrack => {
                     let gain = 0;
                     let percentageUsed = 0; // Para mostrar na mensagem
+                    let maxPercentage = 0; // Para definir o limite superior
 
-                    // B-sides e Minor agora ganham entre 0% e 30%
-                    if (bSideTypes.includes(otherTrack.trackType) || minorTypes.includes(otherTrack.trackType)) {
-                        const randomPercentage = Math.random() * 0.30; // Gera um número entre 0.0 e 0.3
-                        percentageUsed = randomPercentage;
-                        gain = Math.floor(streamsToAdd * randomPercentage); 
-                    } 
-                    // Pre-releases continuam ganhando 95% fixo
-                    else if (preReleaseTypes.includes(otherTrack.trackType)) {
-                        percentageUsed = 0.95; // Fixo
-                        gain = Math.floor(streamsToAdd * percentageUsed); 
+                    // Define o teto da porcentagem aleatória baseado no tipo
+                    if (bSideTypes.includes(otherTrack.trackType)) {
+                        maxPercentage = 0.30; // B-sides: máximo 30%
+                    } else if (minorTypes.includes(otherTrack.trackType)) {
+                        maxPercentage = 0.10; // Intros/Outros: máximo 10%
+                    } else if (preReleaseTypes.includes(otherTrack.trackType)) {
+                        maxPercentage = 0.95; // Pre-releases: máximo 95%
                     }
 
+                    // Calcula o ganho aleatório para B-sides, Minor e Pre-Release
+                    if (maxPercentage > 0) {
+                         // Gera um número aleatório entre 0.0 e maxPercentage
+                        percentageUsed = getRandomFloat(0, maxPercentage);
+                        gain = Math.floor(streamsToAdd * percentageUsed);
+                    }
+
+                    // Aplica o ganho se for maior que 0
                     if (gain > 0) {
                         totalDistributedGain += gain; // Soma ao total distribuído
                         const newOtherStreams = (otherTrack.streams || 0) + gain;
@@ -516,15 +527,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                             id: otherTrack.id,
                             newStreams: newOtherStreams,
                             newTotalStreams: newOtherTotalStreams,
-                            gain: gain,
-                            percentage: percentageUsed // Guarda a porcentagem usada
                         });
+                        // Adiciona detalhe para a mensagem final
+                        distributionDetails.push(`   +${gain.toLocaleString('pt-BR')} para "${otherTrack.name}" (${(percentageUsed * 100).toFixed(1)}%)`);
                     }
-                }); 
+                });
             } else {
                 console.warn(`Faixa ${selectedTrack.name} (ID: ${selectedTrack.id}) não está associada a um lançamento. Distribuição ignorada.`);
             }
-        } 
+        }
 
         const trackPatchChunks = chunkArray(allTrackPatchData, 10);
 
@@ -586,25 +597,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                  alertMessage += `📉 Perda Principal: ${streamsToAdd.toLocaleString('pt-BR')} streams para "${selectedTrack.name}".\n\n`;
             }
 
-            // Mostra o total distribuído se houver
+            // Mostra o total distribuído e os detalhes, se houver
             if (totalDistributedGain > 0) {
-                alertMessage += `✨ +${totalDistributedGain.toLocaleString('pt-BR')} streams distribuídos para outras faixas do lançamento.\n`
-                // Opcional: Detalhar o ganho de cada faixa (pode ficar longo)
-                // trackUpdatesLocal.forEach(upd => {
-                //     if (upd.gain > 0 && upd.id !== selectedTrack.id) {
-                //         const t = db.tracks.find(tr => tr.id === upd.id);
-                //         alertMessage += `   +${upd.gain.toLocaleString('pt-BR')} para "${t?.name || '?'}" (${(upd.percentage * 100).toFixed(1)}%)\n`;
-                //     }
-                // });
-                alertMessage += "\n";
+                alertMessage += `✨ +${totalDistributedGain.toLocaleString('pt-BR')} streams distribuídos para outras faixas:\n`;
+                alertMessage += distributionDetails.join('\n'); // Junta os detalhes
+                alertMessage += "\n\n";
             }
-            
+
             alertMessage += `📊 Uso da Ação: ${newCount}/${limit}`;
-            
+
             if (!isMain) {
                 alertMessage += ` (Limite de 3 usos para participações "Feat.")`;
             }
-            
+
             alert(alertMessage);
             actionModal.classList.add('hidden');
 
@@ -612,7 +617,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('Erro ao tentar persistir no Airtable:', err);
             alert(`Erro ao salvar ação: ${err.message}`);
         } finally {
-            confirmActionButton.disabled = false; 
+            confirmActionButton.disabled = false;
             confirmActionButton.textContent = 'Confirmar Ação';
             updateActionLimitInfo(); // Reavalia o estado
         }
@@ -634,7 +639,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
     actionTypeSelect.addEventListener('change', updateActionLimitInfo);
-    trackSelect.addEventListener('change', updateActionLimitInfo); 
+    trackSelect.addEventListener('change', updateActionLimitInfo);
     cancelActionButton.addEventListener('click', () => { actionModal.classList.add('hidden'); });
     confirmActionButton.addEventListener('click', handleConfirmAction);
 
