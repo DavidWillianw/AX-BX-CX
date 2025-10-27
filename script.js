@@ -36,13 +36,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const PLAYER_NAME_KEY = 'spotifyRpgActions_playerName'; // Mudado para nome para persistência
 
     // --- Configuração das Ações ---
+    // (minStreams/maxStreams definem o ganho da FAIXA PRINCIPAL)
     const ACTION_CONFIG = {
-        'promo_tv':         { limit: 10, countField: 'Promo_TV_Count',         localCountKey: 'promo_tv_count',         minStreams: 0, maxStreams: 100000, isPromotion: true, bonusLocalKey: 'promo_tv_bonus_claimed',         bonusField: 'Promo_TV_Bonus_Claimed' },
-        'promo_radio':      { limit: 10, countField: 'Promo_Radio_Count',      localCountKey: 'promo_radio_count',      minStreams: 0, maxStreams: 70000,  isPromotion: true, bonusLocalKey: 'promo_radio_bonus_claimed',      bonusField: 'Promo_Radio_Bonus_Claimed' },
-        'promo_commercial': { limit: 5,  countField: 'Promo_Commercial_Count', localCountKey: 'promo_commercial_count', minStreams: 0, maxStreams: 150000, isPromotion: true, bonusLocalKey: 'promo_commercial_bonus_claimed', bonusField: 'Promo_Commercial_Bonus_Claimed' },
-        'promo_internet':   { limit: 15, countField: 'Promo_Internet_Count',   localCountKey: 'promo_internet_count',   minStreams: 0, maxStreams: 40000,  isPromotion: true, bonusLocalKey: 'promo_internet_bonus_claimed',   bonusField: 'Promo_Internet_Bonus_Claimed' },
-        'remix':            { limit: 5,  countField: 'Remix_Count',            localCountKey: 'remix_count',            minStreams: 0, maxStreams: 50000,  isPromotion: false, bonusLocalKey: 'remix_bonus_claimed',            bonusField: 'Remix_Bonus_Claimed' },
-        'mv':               { limit: 3,  countField: 'MV_Count',               localCountKey: 'mv_count',               minStreams: 0, maxStreams: 120000, isPromotion: false, bonusLocalKey: 'mv_bonus_claimed',               bonusField: 'MV_Bonus_Claimed' }
+        'promo_tv':         { limit: 10, countField: 'Promo_TV_Count',         localCountKey: 'promo_tv_count',         minStreams: 50000, maxStreams: 100000, isPromotion: true, bonusLocalKey: 'promo_tv_bonus_claimed',         bonusField: 'Promo_TV_Bonus_Claimed' },
+        'promo_radio':      { limit: 10, countField: 'Promo_Radio_Count',      localCountKey: 'promo_radio_count',      minStreams: 30000, maxStreams: 70000,  isPromotion: true, bonusLocalKey: 'promo_radio_bonus_claimed',      bonusField: 'Promo_Radio_Bonus_Claimed' },
+        'promo_commercial': { limit: 5,  countField: 'Promo_Commercial_Count', localCountKey: 'promo_commercial_count', minStreams: 80000, maxStreams: 150000, isPromotion: true, bonusLocalKey: 'promo_commercial_bonus_claimed', bonusField: 'Promo_Commercial_Bonus_Claimed' },
+        'promo_internet':   { limit: 15, countField: 'Promo_Internet_Count',   localCountKey: 'promo_internet_count',   minStreams: 15000, maxStreams: 40000,  isPromotion: true, bonusLocalKey: 'promo_internet_bonus_claimed',   bonusField: 'Promo_Internet_Bonus_Claimed' },
+        'remix':            { limit: 5,  countField: 'Remix_Count',            localCountKey: 'remix_count',            minStreams: 10000, maxStreams: 50000,  isPromotion: false, bonusLocalKey: 'remix_bonus_claimed',            bonusField: 'Remix_Bonus_Claimed' }, // Remix não é promoção, não distribui
+        'mv':               { limit: 3,  countField: 'MV_Count',               localCountKey: 'mv_count',               minStreams: 60000, maxStreams: 120000, isPromotion: false, bonusLocalKey: 'mv_bonus_claimed',               bonusField: 'MV_Bonus_Claimed' }  // MV não é promoção, não distribui
     };
 
     // --- Configuração de Punições ---
@@ -117,19 +118,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return artist;
             });
             
-            // ==================================
-            // ========== JS ALTERADO =========
-            // ==================================
-            // Busca o nome, SENHA e artistas de cada jogador
             db.players = playersData.records.map(r => ({
                 id: r.id,
                 name: r.fields['Nome'],
                 password: r.fields.Senha, // <-- BUSCA A SENHA
                 artists: r.fields['Artistas'] || []
             }));
-            // ==================================
-            // ======== FIM DA ALTERAÇÃO ========
-            // ==================================
 
             const allReleases = [];
             albumsData.records.forEach(r => allReleases.push({
@@ -167,40 +161,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // --- 2. LÓGICA DE LOGIN ---
-    
-    // ==================================
-    // ========== JS ALTERADO =========
-    // ==================================
-    // Função reescrita para aceitar usuário/senha em vez de playerId
     function loginPlayer(username, password) {
          if (!username || !password) {
             alert("Por favor, insira nome de usuário e senha.");
             return;
         }
 
-        // Procura o jogador pelo nome de usuário (ignorando maiúsculas/minúsculas)
         const foundPlayer = db.players.find(p => p.name.toLowerCase() === username.toLowerCase());
 
-        // Verifica se o jogador foi encontrado E se a senha bate
         if (foundPlayer && foundPlayer.password === password) {
-            // Sucesso
             currentPlayer = foundPlayer;
-            localStorage.setItem(PLAYER_NAME_KEY, currentPlayer.name); // Salva o nome para persistência
+            localStorage.setItem(PLAYER_NAME_KEY, currentPlayer.name);
             document.getElementById('playerName').textContent = currentPlayer.name;
             loginPrompt.classList.add('hidden');
             loggedInInfo.classList.remove('hidden');
             actionsWrapper.classList.remove('hidden');
             displayArtistActions();
         } else {
-            // Falha
             alert("Usuário ou senha inválidos.");
-            // Limpa o campo de senha por segurança
             document.getElementById('passwordInput').value = '';
         }
     }
-    // ==================================
-    // ======== FIM DA ALTERAÇÃO ========
-    // ==================================
 
     function logoutPlayer() {
         currentPlayer = null;
@@ -210,23 +191,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         actionsWrapper.classList.add('hidden');
         artistActionsList.innerHTML = "<p>Faça login para ver as ações.</p>";
         
-        // Limpa os campos de login ao sair
         document.getElementById('usernameInput').value = '';
         document.getElementById('passwordInput').value = '';
     }
 
-    // ==================================
-    // ========== JS ALTERADO =========
-    // ==================================
-    // Função atualizada para usar os inputs e persistência pelo nome
     function initializeLogin() {
         if (!db.players || db.players.length === 0) {
             loginPrompt.innerHTML = '<p style="color:red;">Nenhum jogador encontrado no sistema.</p>';
             console.warn("Nenhum jogador carregado. Login desativado.");
             return; 
         }
-
-        // Não preenchemos mais o select
         
         loginButton.addEventListener('click', () => {
              const username = document.getElementById('usernameInput').value;
@@ -235,12 +209,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         logoutButton.addEventListener('click', logoutPlayer);
 
-        // Tenta logar automaticamente com o nome salvo, se houver
         const storedName = localStorage.getItem(PLAYER_NAME_KEY);
         if (storedName) {
             const storedPlayer = db.players.find(p => p.name === storedName);
             if (storedPlayer) {
-                // Simula um login bem-sucedido (sem precisar da senha novamente)
                 currentPlayer = storedPlayer; 
                 localStorage.setItem(PLAYER_NAME_KEY, currentPlayer.name); 
                 document.getElementById('playerName').textContent = currentPlayer.name;
@@ -249,15 +221,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 actionsWrapper.classList.remove('hidden');
                 displayArtistActions();
             } else {
-                logoutPlayer(); // Limpa se o nome salvo não existe mais
+                logoutPlayer(); 
             }
         } else {
-           logoutPlayer(); // Garante estado inicial de logout
+           logoutPlayer(); 
         }
     }
-    // ==================================
-    // ======== FIM DA ALTERAÇÃO ========
-    // ==================================
 
     // --- 3. LÓGICA DE AÇÕES RPG ---
     function getRandomInt(min, max) {
@@ -434,6 +403,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         return chunks;
     }
 
+    // ==================================
+    // ========== JS ALTERADO =========
+    // ==================================
+    // Modificado handleConfirmAction para randomizar ganhos de B-side/Minor
     async function handleConfirmAction() {
         const artistId = modalArtistId.value;
         const trackId = trackSelect.value; 
@@ -456,7 +429,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         confirmActionButton.disabled = true; confirmActionButton.textContent = 'Processando...';
 
-        let streamsToAdd = 0;
+        let streamsToAdd = 0; // Ganho da faixa principal
         let eventMessage = null; 
         const bonusLocalKey = config.bonusLocalKey;
         const bonusField = config.bonusField;
@@ -467,22 +440,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         const newCount = currentCount + 1;
         const artistPatchBody = { fields: { [config.countField]: newCount } }; 
 
-        if (!hasClaimedBonus && bonusCheck < 0.01) {
+        // Calcula o ganho da faixa principal
+        if (!hasClaimedBonus && bonusCheck < 0.01) { // 1% chance de Jackpot
             streamsToAdd = 200000;
             eventMessage = "🎉 JACKPOT! Você viralizou inesperadamente e ganhou +200k streams! (Bônus de categoria único)";
             artistPatchBody.fields[bonusField] = true; 
             artist[bonusLocalKey] = true; 
-        } else if (punishmentCheck < 0.10) {
+        } else if (punishmentCheck < 0.10) { // 10% chance de Punição
             const punishment = getRandomPunishment();
             streamsToAdd = punishment.value;
             eventMessage = punishment.message;
-        } else {
+        } else { // Ganho normal
             streamsToAdd = getRandomInt(config.minStreams, config.maxStreams);
         }
         
         const allTrackPatchData = []; 
         const trackUpdatesLocal = []; 
 
+        // Aplica o ganho à faixa principal (A-Side)
         const newASideStreams = Math.max(0, (selectedTrack.streams || 0) + streamsToAdd);
         const newASideTotalStreams = Math.max(0, (selectedTrack.totalStreams || 0) + streamsToAdd);
         
@@ -499,36 +474,38 @@ document.addEventListener('DOMContentLoaded', async () => {
             newTotalStreams: newASideTotalStreams
         });
 
+        // --- LÓGICA DE DISTRIBUIÇÃO B-SIDE/MINOR (MODIFICADA) ---
         let otherTracksInRelease = [];
-        let bSideGains = 0;
-        let preReleaseGains = 0;
-        let otherGains = 0; 
+        let totalDistributedGain = 0; // Para somar o ganho total distribuído
 
+        // Só distribui se for PROMOÇÃO, ganho POSITIVO e artista for MAIN/DUETO
         if (config.isPromotion && streamsToAdd > 0 && isMain) {
             const releaseId = selectedTrack.release;
             if (releaseId) {
                 otherTracksInRelease = db.tracks.filter(t => t.release === releaseId && t.id !== selectedTrack.id);
 
                 const bSideTypes = ['B-side'];
-                const preReleaseTypes = ['Pre-release'];
+                const preReleaseTypes = ['Pre-release']; // Pre-releases ainda recebem fixo
                 const minorTypes = ['Intro', 'Outro', 'Skit', 'Interlude'];
 
                 otherTracksInRelease.forEach(otherTrack => {
                     let gain = 0;
-                    if (bSideTypes.includes(otherTrack.trackType)) {
-                        gain = Math.floor(streamsToAdd * 0.30);
-                        bSideGains += gain;
+                    let percentageUsed = 0; // Para mostrar na mensagem
+
+                    // B-sides e Minor agora ganham entre 0% e 30%
+                    if (bSideTypes.includes(otherTrack.trackType) || minorTypes.includes(otherTrack.trackType)) {
+                        const randomPercentage = Math.random() * 0.30; // Gera um número entre 0.0 e 0.3
+                        percentageUsed = randomPercentage;
+                        gain = Math.floor(streamsToAdd * randomPercentage); 
                     } 
+                    // Pre-releases continuam ganhando 95% fixo
                     else if (preReleaseTypes.includes(otherTrack.trackType)) {
-                        gain = Math.floor(streamsToAdd * 0.95);
-                        preReleaseGains += gain;
-                    }
-                    else if (minorTypes.includes(otherTrack.trackType)) {
-                        gain = Math.floor(streamsToAdd * 0.10);
-                        otherGains += gain;
+                        percentageUsed = 0.95; // Fixo
+                        gain = Math.floor(streamsToAdd * percentageUsed); 
                     }
 
                     if (gain > 0) {
+                        totalDistributedGain += gain; // Soma ao total distribuído
                         const newOtherStreams = (otherTrack.streams || 0) + gain;
                         const newOtherTotalStreams = (otherTrack.totalStreams || 0) + gain;
                         allTrackPatchData.push({
@@ -539,7 +516,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                             id: otherTrack.id,
                             newStreams: newOtherStreams,
                             newTotalStreams: newOtherTotalStreams,
-                            gain: gain
+                            gain: gain,
+                            percentage: percentageUsed // Guarda a porcentagem usada
                         });
                     }
                 }); 
@@ -586,6 +564,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 throw new Error(`Falha ao salvar: ${failedEntity} (${errorDetails})`);
             }
 
+            // Atualiza DB local
             artist[config.localCountKey] = newCount;
             trackUpdatesLocal.forEach(update => {
                 const trackInDb = db.tracks.find(t => t.id === update.id);
@@ -595,33 +574,35 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
 
+            // Monta a mensagem de sucesso
             let alertMessage = `Ação "${actionTypeSelect.options[actionTypeSelect.selectedIndex].text}" registrada!\n\n`;
             if (eventMessage) {
                 alertMessage += `${eventMessage}\n\n`;
             }
 
             if (streamsToAdd >= 0) {
-                 alertMessage += `+${streamsToAdd.toLocaleString('pt-BR')} streams para "${selectedTrack.name}".\n\n`;
+                 alertMessage += `📈 Ganho Principal: +${streamsToAdd.toLocaleString('pt-BR')} streams para "${selectedTrack.name}".\n\n`;
             } else {
-                 alertMessage += `${streamsToAdd.toLocaleString('pt-BR')} streams para "${selectedTrack.name}".\n\n`;
+                 alertMessage += `📉 Perda Principal: ${streamsToAdd.toLocaleString('pt-BR')} streams para "${selectedTrack.name}".\n\n`;
             }
 
-            alertMessage += `Uso: ${newCount}/${limit}`;
+            // Mostra o total distribuído se houver
+            if (totalDistributedGain > 0) {
+                alertMessage += `✨ +${totalDistributedGain.toLocaleString('pt-BR')} streams distribuídos para outras faixas do lançamento.\n`
+                // Opcional: Detalhar o ganho de cada faixa (pode ficar longo)
+                // trackUpdatesLocal.forEach(upd => {
+                //     if (upd.gain > 0 && upd.id !== selectedTrack.id) {
+                //         const t = db.tracks.find(tr => tr.id === upd.id);
+                //         alertMessage += `   +${upd.gain.toLocaleString('pt-BR')} para "${t?.name || '?'}" (${(upd.percentage * 100).toFixed(1)}%)\n`;
+                //     }
+                // });
+                alertMessage += "\n";
+            }
+            
+            alertMessage += `📊 Uso da Ação: ${newCount}/${limit}`;
             
             if (!isMain) {
                 alertMessage += ` (Limite de 3 usos para participações "Feat.")`;
-            }
-
-            if (config.isPromotion && streamsToAdd > 0 && isMain) {
-                if (bSideGains > 0) {
-                    alertMessage += `\n\n+${bSideGains.toLocaleString('pt-BR')} streams distribuídos para B-side(s) (30%).`;
-                }
-                if (preReleaseGains > 0) {
-                    alertMessage += `\n\n+${preReleaseGains.toLocaleString('pt-BR')} streams distribuídos para Pre-release(s) (95%).`;
-                }
-                if (otherGains > 0) {
-                    alertMessage += `\n\n+${otherGains.toLocaleString('pt-BR')} streams distribuídos para Intro/Outro/etc (10%).`;
-                }
             }
             
             alert(alertMessage);
@@ -633,9 +614,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         } finally {
             confirmActionButton.disabled = false; 
             confirmActionButton.textContent = 'Confirmar Ação';
-            updateActionLimitInfo(); // Reavalia o estado (agora com o novo limite)
+            updateActionLimitInfo(); // Reavalia o estado
         }
     }
+    // ==================================
+    // ======== FIM DA ALTERAÇÃO ========
+    // ==================================
 
     // --- 5. INICIALIZAÇÃO ---
     // Listeners do Modal
@@ -650,7 +634,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
     actionTypeSelect.addEventListener('change', updateActionLimitInfo);
-    trackSelect.addEventListener('change', updateActionLimitInfo); // Atualiza ao selecionar faixa
+    trackSelect.addEventListener('change', updateActionLimitInfo); 
     cancelActionButton.addEventListener('click', () => { actionModal.classList.add('hidden'); });
     confirmActionButton.addEventListener('click', handleConfirmAction);
 
