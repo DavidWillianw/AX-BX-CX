@@ -32,9 +32,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Chave localStorage
     const PLAYER_ID_KEY = 'spotifyRpgActions_playerId';
 
-    // --- ATUALIZADO: Configuração das Ações ---
-    // minStreams = 0 para todos
-    // Adicionado bonusLocalKey (para db.artists) e bonusField (para Airtable)
+    // --- Configuração das Ações ---
     const ACTION_CONFIG = {
         'promo_tv':         { limit: 10, countField: 'Promo_TV_Count',         localCountKey: 'promo_tv_count',         minStreams: 0, maxStreams: 100000, isPromotion: true, bonusLocalKey: 'promo_tv_bonus_claimed',         bonusField: 'Promo_TV_Bonus_Claimed' },
         'promo_radio':      { limit: 10, countField: 'Promo_Radio_Count',      localCountKey: 'promo_radio_count',      minStreams: 0, maxStreams: 70000,  isPromotion: true, bonusLocalKey: 'promo_radio_bonus_claimed',      bonusField: 'Promo_Radio_Bonus_Claimed' },
@@ -44,7 +42,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         'mv':               { limit: 3,  countField: 'MV_Count',               localCountKey: 'mv_count',               minStreams: 0, maxStreams: 120000, isPromotion: false, bonusLocalKey: 'mv_bonus_claimed',               bonusField: 'MV_Bonus_Claimed' }
     };
 
-    // --- NOVO: Configuração de Punições ---
+    // --- Configuração de Punições ---
     const PUNISHMENT_CONFIG = [
         { message: "🚫 Opa! Você teve uma fala polêmica na tv e foi cancelada!", value: -12000 },
         { message: "📉 Seu MV foi acusado de plágio! Que situação...", value: -20000 },
@@ -54,13 +52,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         { message: "💔 Um membro do grupo se envolveu em um escândalo de namoro!", value: -25000 }
     ];
 
-    /**
-     * Retorna um objeto de punição aleatório da lista.
-     */
     function getRandomPunishment() {
         return PUNISHMENT_CONFIG[Math.floor(Math.random() * PUNISHMENT_CONFIG.length)];
     }
-
 
     // --- 1. CARREGAMENTO DE DADOS ---
     async function fetchAllAirtablePages(baseUrl, fetchOptions) {
@@ -101,12 +95,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 fetchAllAirtablePages(tracksURL, fetchOptions)
             ]);
 
-            // Verificação essencial
             if (!artistsData || !playersData || !albumsData || !singlesData || !tracksData) {
                 throw new Error('Falha ao carregar um ou mais conjuntos de dados essenciais.');
             }
 
-            // --- ATUALIZADO: Mapeamento dinâmico de Artistas ---
             db.artists = artistsData.records.map(r => {
                 const artist = {
                     id: r.id,
@@ -114,17 +106,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     RPGPoints: r.fields.RPGPoints || 0,
                     LastActive: r.fields.LastActive || null,
                 };
-
-                // Carrega dinamicamente todos os contadores E flags de bônus
-                // baseados no ACTION_CONFIG
                 for (const key in ACTION_CONFIG) {
                     const config = ACTION_CONFIG[key];
-                    // Carrega o contador (ex: promo_tv_count)
                     artist[config.localCountKey] = r.fields[config.countField] || 0;
-                    // Carrega a flag de bônus (ex: promo_tv_bonus_claimed)
                     artist[config.bonusLocalKey] = r.fields[config.bonusField] || false;
                 }
-
                 return artist;
             });
 
@@ -138,25 +124,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             albumsData.records.forEach(r => allReleases.push({
                 id: r.id,
                 name: r.fields['Nome do Álbum'] || 'Álbum?',
-                artists: r.fields['Artista'] || []
+                artists: r.fields['Artista'] || [] // Artista principal ou Dueto
             }));
             singlesData.records.forEach(r => allReleases.push({
                 id: r.id,
                 name: r.fields['Nome do Single/EP'] || 'Single?',
-                artists: r.fields['Artista'] || []
+                artists: r.fields['Artista'] || [] // Artista principal ou Dueto
             }));
             db.releases = allReleases;
 
+            // --- ATUALIZADO: db.tracks agora carrega TODOS os artistas e tipo de colaboração ---
             db.tracks = tracksData.records.map(r => {
                 const releaseId = (r.fields['Álbuns']?.[0]) || (r.fields['Singles e EPs']?.[0]) || null;
                 return {
                     id: r.id,
                     name: r.fields['Nome da Faixa'] || 'Faixa?',
                     release: releaseId,
-                    streams: r.fields.Streams || 0, // Semanal
-                    totalStreams: r.fields['Streams Totais'] || 0, // <<< TOTAL LIDO AQUI
-                    // --- ATUALIZADO: Lê a lista completa de tipos ---
-                    trackType: r.fields['Tipo de Faixa'] || 'B-side' // Define 'B-side' como padrão se nulo
+                    streams: r.fields.Streams || 0,
+                    totalStreams: r.fields['Streams Totais'] || 0,
+                    trackType: r.fields['Tipo de Faixa'] || 'B-side',
+                    artistIds: r.fields['Artista'] || [], // Lista de TODOS os artistas na faixa
+                    collabType: r.fields['Tipo de Colaboração'] || null // "Feat." ou "Dueto/Grupo"
                 };
             });
 
@@ -173,7 +161,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         currentPlayer = db.players.find(p => p.id === playerId);
         if (!currentPlayer) {
             console.error(`Jogador ${playerId} não encontrado.`);
-            logoutPlayer(); // Limpa estado se jogador não for achado
+            logoutPlayer(); 
             return;
         }
         localStorage.setItem(PLAYER_ID_KEY, playerId);
@@ -198,7 +186,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             playerSelect.innerHTML = '<option value="" disabled selected>Nenhum jogador encontrado</option>';
             loginButton.disabled = true;
             console.warn("Nenhum jogador carregado. Login desativado.");
-            return; // Sai se não há jogadores
+            return; 
         }
 
         playerSelect.innerHTML = '<option value="" disabled selected>Selecione...</option>';
@@ -215,10 +203,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         logoutButton.addEventListener('click', logoutPlayer);
 
         const storedId = localStorage.getItem(PLAYER_ID_KEY);
-        if (storedId && db.players.some(p => p.id === storedId)) { // Verifica se ID ainda é válido
+        if (storedId && db.players.some(p => p.id === storedId)) { 
             loginPlayer(storedId);
         } else {
-            logoutPlayer(); // Limpa se ID inválido ou não existe
+            logoutPlayer(); 
         }
     }
 
@@ -233,7 +221,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!currentPlayer) return;
         const playerArtists = currentPlayer.artists
             .map(id => db.artists.find(a => a.id === id))
-            .filter(Boolean) // Remove artistas não encontrados (segurança)
+            .filter(Boolean) 
             .sort((a, b) => a.name.localeCompare(b.name));
 
         if (playerArtists.length === 0) {
@@ -263,24 +251,55 @@ document.addEventListener('DOMContentLoaded', async () => {
         modalArtistName.textContent = artist.name;
         modalArtistId.value = artist.id;
 
-        populateReleaseSelect(artist.id); // Popula lançamentos
-        actionTypeSelect.value = ""; // Reseta tipo de ação
-        trackSelect.innerHTML = '<option value="" disabled selected>Selecione um lançamento primeiro</option>'; // Reseta faixas
-        trackSelectWrapper.classList.add('hidden'); // Esconde seletor de faixas
-        actionLimitInfo.classList.add('hidden'); // Esconde info de limite
-        confirmActionButton.disabled = true; // Desabilita botão até selecionar tudo
+        // --- ATUALIZADO: Esta função agora encontra lançamentos principais E feats ---
+        populateReleaseSelect(artist.id); 
+        
+        actionTypeSelect.value = ""; 
+        trackSelect.innerHTML = '<option value="" disabled selected>Selecione um lançamento primeiro</option>'; 
+        trackSelectWrapper.classList.add('hidden'); 
+        actionLimitInfo.classList.add('hidden'); 
+        confirmActionButton.disabled = true; 
         confirmActionButton.textContent = 'Confirmar Ação';
         actionModal.classList.remove('hidden');
     }
 
+    // --- ATUALIZADO: populateReleaseSelect ---
+    // Agora encontra lançamentos onde o artista é principal (ou Dueto)
+    // E também lançamentos onde ele é "Feat." em uma faixa acionável.
     function populateReleaseSelect(artistId) {
-        const artistReleases = db.releases.filter(r => r.artists && r.artists.includes(artistId));
+        // 1. Encontra lançamentos onde o artista é principal (ou Dueto)
+        const mainArtistReleases = db.releases.filter(r => r.artists && r.artists.includes(artistId));
+        const mainArtistReleaseIds = new Set(mainArtistReleases.map(r => r.id));
+
+        // 2. Encontra lançamentos onde o artista é "Feat."
+        const featuredReleaseIds = new Set();
+        const actionableTypes = ['Title Track', 'Pre-release'];
+        
+        db.tracks.forEach(track => {
+            // Se a faixa tem um release, o artista está na lista de artistas, E é uma faixa acionável
+            if (track.release && 
+                track.artistIds.includes(artistId) && 
+                actionableTypes.includes(track.trackType)) {
+                
+                // Adiciona o ID do release à lista
+                featuredReleaseIds.add(track.release);
+            }
+        });
+
+        // 3. Combina as duas listas (sem duplicatas)
+        const allReleaseIds = new Set([...mainArtistReleaseIds, ...featuredReleaseIds]);
+        
+        // 4. Busca os objetos de release completos
+        const allReleases = db.releases.filter(r => allReleaseIds.has(r.id));
+        
+        // 5. Popula o <select>
         releaseSelect.innerHTML = '<option value="" disabled selected>Selecione o Single/EP/Álbum...</option>';
-        if (artistReleases.length === 0) {
+        if (allReleases.length === 0) {
             releaseSelect.innerHTML += '<option value="" disabled>Nenhum lançamento encontrado</option>';
             return;
         }
-        artistReleases
+        
+        allReleases
             .sort((a, b) => a.name.localeCompare(b.name))
             .forEach(r => {
                 const o = document.createElement('option');
@@ -291,29 +310,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // --- ATUALIZADO: populateTrackSelect ---
-    // Agora busca por 'Title Track' e 'Pre-release'
-   // --- ATUALIZADO: populateTrackSelect ---
-    // Agora busca por 'Title Track' E 'Pre-release'
-    function populateTrackSelect(releaseId) {
+    // Agora aceita artistId e filtra faixas que o artista pode promover
+    function populateTrackSelect(releaseId, artistId) {
         
-        // ATUALIZADO: Busca faixas acionáveis (Title Track OU Pre-release)
         const actionableTypes = ['Title Track', 'Pre-release'];
         
+        // Encontra faixas acionáveis NESSES release ONDE o artista está (seja main ou feat)
         const releaseActionableTracks = db.tracks.filter(t => 
             t.release === releaseId && 
-            actionableTypes.includes(t.trackType)
+            actionableTypes.includes(t.trackType) &&
+            t.artistIds.includes(artistId) // <-- O artista LOGADO tem que estar na faixa
         );
 
         trackSelect.innerHTML = '<option value="" disabled selected>Selecione a Faixa Título / Pre-release...</option>';
 
         if (releaseActionableTracks.length === 0) {
-            trackSelect.innerHTML += '<option value="" disabled>Nenhuma "Title Track" ou "Pre-release" neste lançamento</option>';
-            trackSelectWrapper.classList.remove('hidden'); // Mostra mesmo se vazio para informar
+            trackSelect.innerHTML += '<option value="" disabled>Nenhuma faixa acionável sua neste lançamento</option>';
+            trackSelectWrapper.classList.remove('hidden');
             return;
         }
 
         releaseActionableTracks
-            .sort((a, b) => a.name.localeCompare(b.name)) // Ordena alfabeticamente
+            .sort((a, b) => a.name.localeCompare(b.name))
             .forEach(t => {
                 const o = document.createElement('option');
                 o.value = t.id;
@@ -325,22 +343,44 @@ document.addEventListener('DOMContentLoaded', async () => {
         trackSelectWrapper.classList.remove('hidden'); // Mostra o seletor
     }
 
-
+    // --- ATUALIZADO: updateActionLimitInfo ---
+    // Agora verifica se é "Feat." (limite 3) ou "Main/Dueto" (limite normal)
     function updateActionLimitInfo() {
         const artistId = modalArtistId.value;
         const actionType = actionTypeSelect.value;
         const trackId = trackSelect.value; // Verifica se a faixa foi selecionada
         const artist = db.artists.find(a => a.id === artistId);
-
+        
         if (!artist || !actionType || !ACTION_CONFIG[actionType]) {
             actionLimitInfo.classList.add('hidden');
-            confirmActionButton.disabled = true; // Desabilita se falta info
+            confirmActionButton.disabled = true;
+            return;
+        }
+        
+        const config = ACTION_CONFIG[actionType];
+        
+        // Se a faixa não foi selecionada, desabilita mas mostra o limite padrão
+        if (!trackId) {
+            actionLimitInfo.classList.add('hidden'); // Esconde se não há faixa
+            confirmActionButton.disabled = true;
+            confirmActionButton.textContent = 'Selecione a Faixa';
             return;
         }
 
-        const config = ACTION_CONFIG[actionType];
-        const currentCount = artist[config.localCountKey] || 0; // Usa 0 se undefined
-        const limit = config.limit;
+        const track = db.tracks.find(t => t.id === trackId);
+        if (!track) { // Segurança, caso a faixa suma
+             actionLimitInfo.classList.add('hidden');
+             confirmActionButton.disabled = true;
+             return;
+        }
+
+        // --- LÓGICA DE LIMITE ---
+        // É "Main" se for o primeiro artista da lista OU se for "Dueto/Grupo"
+        const isMain = track.artistIds[0] === artistId || track.collabType === 'Dueto/Grupo';
+        // O limite é o padrão (ex: 10) se for Main, ou 3 se for Feat.
+        const limit = isMain ? config.limit : 3; 
+        
+        const currentCount = artist[config.localCountKey] || 0; 
 
         currentActionCount.textContent = currentCount;
         maxActionCount.textContent = limit;
@@ -350,10 +390,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             currentActionCount.style.color = 'var(--trend-down-red)';
             confirmActionButton.disabled = true;
             confirmActionButton.textContent = 'Limite Atingido';
-        } else if (!trackId) { // Desabilita se a faixa não foi selecionada
-            currentActionCount.style.color = 'var(--text-primary)';
-            confirmActionButton.disabled = true;
-            confirmActionButton.textContent = 'Selecione a Faixa';
         } else {
             currentActionCount.style.color = 'var(--text-primary)';
             confirmActionButton.disabled = false;
@@ -361,7 +397,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Função auxiliar para dividir array em chunks
+
     function chunkArray(array, chunkSize) {
         const chunks = [];
         for (let i = 0; i < array.length; i += chunkSize) {
@@ -370,10 +406,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         return chunks;
     }
 
-    // --- ATUALIZADO: Função principal com Bônus/Punição/Mínimo 0 ---
+    // --- ATUALIZADO: handleConfirmAction ---
+    // Verifica o limite (3 ou normal) e distribui B-side APENAS se for Main/Dueto
     async function handleConfirmAction() {
         const artistId = modalArtistId.value;
-        const trackId = trackSelect.value; // ID da 'Title Track' ou 'Pre-release'
+        const trackId = trackSelect.value; 
         const actionType = actionTypeSelect.value;
 
         if (!artistId || !trackId || !actionType) { alert("Selecione artista, lançamento, faixa e tipo de ação."); return; }
@@ -381,14 +418,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         const selectedTrack = db.tracks.find(t => t.id === trackId);
         const config = ACTION_CONFIG[actionType];
         if (!artist || !selectedTrack || !config) { alert("Erro: Dados inválidos (artista, faixa ou config)."); return; }
+
+        // --- LÓGICA DE LIMITE (Repetida para segurança) ---
+        const isMain = selectedTrack.artistIds[0] === artistId || selectedTrack.collabType === 'Dueto/Grupo';
+        const limit = isMain ? config.limit : 3;
         const currentCount = artist[config.localCountKey] || 0;
-        if (currentCount >= config.limit) { alert("Limite de uso para esta ação já foi atingido."); return; }
+        
+        if (currentCount >= limit) {
+            alert("Limite de uso para esta ação já foi atingido."); 
+            return;
+        }
 
         confirmActionButton.disabled = true; confirmActionButton.textContent = 'Processando...';
 
-        // --- NOVO: LÓGICA DE GANHO (BÔNUS / PUNIÇÃO / NORMAL) ---
+        // --- LÓGICA DE GANHO (BÔNUS / PUNIÇÃO / NORMAL) ---
         let streamsToAdd = 0;
-        let eventMessage = null; // Mensagem especial para bônus ou punição
+        let eventMessage = null; 
         const bonusLocalKey = config.bonusLocalKey;
         const bonusField = config.bonusField;
         const hasClaimedBonus = artist[bonusLocalKey] || false;
@@ -396,36 +441,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         const bonusCheck = Math.random();
         const punishmentCheck = Math.random();
         const newCount = currentCount + 1;
-        const artistPatchBody = { fields: { [config.countField]: newCount } }; // Prepara o patch do artista
+        const artistPatchBody = { fields: { [config.countField]: newCount } }; 
 
         if (!hasClaimedBonus && bonusCheck < 0.01) {
-            // 1% DE BÔNUS (E não foi pego ainda)
             streamsToAdd = 200000;
             eventMessage = "🎉 JACKPOT! Você viralizou inesperadamente e ganhou +200k streams! (Bônus de categoria único)";
-            
-            // Adiciona a flag de bônus ao patch do artista
             artistPatchBody.fields[bonusField] = true; 
-            // Atualiza localmente
             artist[bonusLocalKey] = true; 
-
         } else if (punishmentCheck < 0.10) {
-            // 10% DE PUNIÇÃO
             const punishment = getRandomPunishment();
-            streamsToAdd = punishment.value; // Valor negativo
+            streamsToAdd = punishment.value;
             eventMessage = punishment.message;
-
         } else {
-            // GANHO NORMAL (Agora com mínimo 0)
             streamsToAdd = getRandomInt(config.minStreams, config.maxStreams);
         }
-        // --- FIM DA LÓGICA DE GANHO ---
-
-
-        const allTrackPatchData = []; // Guarda {id, fields} para PATCH no Airtable
-        const trackUpdatesLocal = []; // Para atualizar db local {id, newStreams, newTotalStreams, gain?}
+        
+        const allTrackPatchData = []; 
+        const trackUpdatesLocal = []; 
 
         // --- Dados para A-side (Track selecionada) ---
-        // Garante que streams não fiquem abaixo de 0 (semanal e total)
         const newASideStreams = Math.max(0, (selectedTrack.streams || 0) + streamsToAdd);
         const newASideTotalStreams = Math.max(0, (selectedTrack.totalStreams || 0) + streamsToAdd);
         
@@ -442,71 +476,57 @@ document.addEventListener('DOMContentLoaded', async () => {
             newTotalStreams: newASideTotalStreams
         });
 
-        // --- ATUALIZADO: Nova Lógica de Distribuição por Tipo de Faixa ---
+        // --- LÓGICA DE DISTRIBUIÇÃO B-SIDE ---
         let otherTracksInRelease = [];
         let bSideGains = 0;
         let preReleaseGains = 0;
-        let otherGains = 0; // Para Intro/Outro/etc
+        let otherGains = 0; 
 
-        // Só distribui ganhos se a ação for de promoção E o ganho for POSITIVO
-        if (config.isPromotion && streamsToAdd > 0) {
+        // --- ATUALIZADO: Só distribui se for PROMOÇÃO, ganho POSITIVO e artista for MAIN/DUETO ---
+        if (config.isPromotion && streamsToAdd > 0 && isMain) {
             const releaseId = selectedTrack.release;
             if (releaseId) {
                 otherTracksInRelease = db.tracks.filter(t => t.release === releaseId && t.id !== selectedTrack.id);
 
-                // Define os tipos para facilitar
                 const bSideTypes = ['B-side'];
                 const preReleaseTypes = ['Pre-release'];
                 const minorTypes = ['Intro', 'Outro', 'Skit', 'Interlude'];
 
                 otherTracksInRelease.forEach(otherTrack => {
                     let gain = 0;
-                    
                     if (bSideTypes.includes(otherTrack.trackType)) {
-                        // B-sides ganham 30% do ganho principal
                         gain = Math.floor(streamsToAdd * 0.30);
                         bSideGains += gain;
                     } 
                     else if (preReleaseTypes.includes(otherTrack.trackType)) {
-                        // Pre-releases (outras) ganham 95%
                         gain = Math.floor(streamsToAdd * 0.95);
                         preReleaseGains += gain;
                     }
                     else if (minorTypes.includes(otherTrack.trackType)) {
-                        // Intro/Outro/etc ganham 10%
                         gain = Math.floor(streamsToAdd * 0.10);
                         otherGains += gain;
                     }
 
-                    // Se houve ganho, prepara o patch
                     if (gain > 0) {
-                        // Streams bônus só podem ser positivos
                         const newOtherStreams = (otherTrack.streams || 0) + gain;
                         const newOtherTotalStreams = (otherTrack.totalStreams || 0) + gain;
-                        
                         allTrackPatchData.push({
                             id: otherTrack.id,
-                            fields: {
-                                "Streams": newOtherStreams,
-                                "Streams Totais": newOtherTotalStreams
-                            }
+                            fields: { "Streams": newOtherStreams, "Streams Totais": newOtherTotalStreams }
                         });
-                        
-                        // Atualiza o local (usado para o 'alert' e para o db local)
                         trackUpdatesLocal.push({
                             id: otherTrack.id,
                             newStreams: newOtherStreams,
                             newTotalStreams: newOtherTotalStreams,
-                            gain: gain // Armazena o ganho para o alert
+                            gain: gain
                         });
                     }
-                }); // fim do forEach
-
+                }); 
             } else {
                 console.warn(`Faixa ${selectedTrack.name} (ID: ${selectedTrack.id}) não está associada a um lançamento. Distribuição ignorada.`);
             }
-        }
-        // --- FIM DA NOVA LÓGICA DE DISTRIBUIÇÃO ---
+        } 
+        // Se for "Feat." (isMain = false), este bloco é pulado e B-sides não ganham nada.
 
         const trackPatchChunks = chunkArray(allTrackPatchData, 10);
 
@@ -519,16 +539,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             };
 
             const allPromises = [
-                // Envia o patch do artista (que pode conter a contagem E a flag de bônus)
                 fetch(artistPatchUrl, { ...fetchOptionsPatch, body: JSON.stringify(artistPatchBody) })
             ];
 
             trackPatchChunks.forEach(chunk => {
-                const chunkPromise = fetch(trackPatchUrlBase, {
+                allPromises.push(fetch(trackPatchUrlBase, {
                     ...fetchOptionsPatch,
                     body: JSON.stringify({ records: chunk })
-                });
-                allPromises.push(chunkPromise);
+                }));
             });
 
             const responses = await Promise.all(allPromises);
@@ -541,7 +559,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     try {
                         const errorJson = await failedResponse.json();
                         errorDetails = JSON.stringify(errorJson.error || errorJson);
-                    } catch (e) { /* ignora se não conseguir ler corpo do erro */ }
+                    } catch (e) { /* ignora */ }
                 }
                 const failedIndex = responses.findIndex(response => !response.ok);
                 const failedEntity = failedIndex === 0 ? 'Artista' : `Faixas (chunk ${failedIndex})`;
@@ -550,33 +568,36 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // --- Atualizar DB local ---
             artist[config.localCountKey] = newCount;
-            // (A flag de bônus já foi atualizada localmente lá em cima)
             trackUpdatesLocal.forEach(update => {
                 const trackInDb = db.tracks.find(t => t.id === update.id);
                 if (trackInDb) {
                     trackInDb.streams = update.newStreams;
-                    trackInDb.totalStreams = update.newTotalStreams; // <<< ATUALIZA TOTAL LOCALMENTE
+                    trackInDb.totalStreams = update.newTotalStreams;
                 }
             });
 
-            // --- ATUALIZADO: Mensagem de sucesso ---
+            // --- Mensagem de sucesso ---
             let alertMessage = `Ação "${actionTypeSelect.options[actionTypeSelect.selectedIndex].text}" registrada!\n\n`;
-            
             if (eventMessage) {
                 alertMessage += `${eventMessage}\n\n`;
             }
 
-            // Formata o ganho/perda da A-side
             if (streamsToAdd >= 0) {
                  alertMessage += `+${streamsToAdd.toLocaleString('pt-BR')} streams para "${selectedTrack.name}".\n\n`;
             } else {
                  alertMessage += `${streamsToAdd.toLocaleString('pt-BR')} streams para "${selectedTrack.name}".\n\n`;
             }
 
-            alertMessage += `Uso: ${newCount}/${config.limit}`;
+            // ATUALIZADO: Mostra o limite dinâmico (3 ou normal)
+            alertMessage += `Uso: ${newCount}/${limit}`;
             
-            // --- ATUALIZADO: Mensagens de Bônus por tipo ---
-            if (config.isPromotion && streamsToAdd > 0) {
+            // ATUALIZADO: Adiciona aviso se for "Feat."
+            if (!isMain) {
+                alertMessage += ` (Limite de 3 usos para participações "Feat.")`;
+            }
+
+            // Mensagens de Bônus (só aparecem se isMain = true)
+            if (config.isPromotion && streamsToAdd > 0 && isMain) {
                 if (bSideGains > 0) {
                     alertMessage += `\n\n+${bSideGains.toLocaleString('pt-BR')} streams distribuídos para B-side(s) (30%).`;
                 }
@@ -585,11 +606,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
                 if (otherGains > 0) {
                     alertMessage += `\n\n+${otherGains.toLocaleString('pt-BR')} streams distribuídos para Intro/Outro/etc (10%).`;
-                }
-                
-                // Se não ganhou nada mas existiam outras faixas
-                if (bSideGains === 0 && preReleaseGains === 0 && otherGains === 0 && otherTracksInRelease.length > 0) {
-                     alertMessage += `\n\n(Nenhuma faixa bônus elegível foi encontrada para receber streams extras).`;
                 }
             }
             
@@ -600,22 +616,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('Erro ao tentar persistir no Airtable:', err);
             alert(`Erro ao salvar ação: ${err.message}`);
         } finally {
-            confirmActionButton.disabled = false; // Reabilita mesmo com erro
+            confirmActionButton.disabled = false; 
             confirmActionButton.textContent = 'Confirmar Ação';
-            updateActionLimitInfo(); // Reavalia o estado do botão/limite
+            updateActionLimitInfo(); // Reavalia o estado (agora com o novo limite)
         }
     }
 
     // --- 5. INICIALIZAÇÃO ---
     // Listeners do Modal
     releaseSelect.addEventListener('change', () => {
-        if (releaseSelect.value) {
-            populateTrackSelect(releaseSelect.value); // Popula faixas
-            updateActionLimitInfo(); // Atualiza limite/botão (depende da faixa também)
+        // --- ATUALIZADO: Passa o artistId para popular as faixas corretamente ---
+        const artistId = modalArtistId.value;
+        if (releaseSelect.value && artistId) {
+            populateTrackSelect(releaseSelect.value, artistId);
         } else {
             trackSelectWrapper.classList.add('hidden');
             trackSelect.innerHTML = '<option value="" disabled selected>Selecione um lançamento</option>';
-            updateActionLimitInfo(); // Atualiza limite/botão
+            updateActionLimitInfo();
         }
     });
     actionTypeSelect.addEventListener('change', updateActionLimitInfo);
@@ -626,11 +643,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Carga inicial
     await loadRequiredData();
-    // Verifica se os dados essenciais foram carregados antes de inicializar o login
     if (db.players && db.artists) {
         initializeLogin();
     } else {
-        // Se loadRequiredData falhou, a mensagem de erro já deve estar em artistActionsList
         console.error("Não foi possível inicializar o login devido a erro no carregamento de dados.");
         if (artistActionsList) artistActionsList.innerHTML = "<p>Erro crítico ao carregar dados. Verifique o console.</p>";
     }
