@@ -46,6 +46,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         'mv':               { limit: 3,  countField: 'MV_Count',               localCountKey: 'mv_count',               minStreams: 60000, maxStreams: 120000, isPromotion: false, bonusLocalKey: 'mv_bonus_claimed',               bonusField: 'MV_Bonus_Claimed' }  // MV não é promoção, não distribui
     };
 
+    // ==================================
+    // === PUNISHMENT_CONFIG ATUALIZADO ===
+    // ==================================
     // --- Configuração de Punições ---
     const PUNISHMENT_CONFIG = [
         { message: "🚫 Opa! Você teve uma fala polêmica na tv e foi cancelada!", value: -12000 },
@@ -53,8 +56,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         { message: "🔥 Vazou uma demo antiga sua e... não é boa.", value: -5000 },
         { message: "😲 Um influencer famoso criticou sua música.", value: -15000 },
         { message: "🤷‍♂️ A promoção não deu certo e foi ignorada pelo público.", value: -1000 }, // Punição leve
-        { message: "💔 Um membro do grupo se envolveu em um escândalo de namoro!", value: -25000 }
+        { message: "💔 Um membro do grupo se envolveu em um escândalo de namoro!", value: -25000 },
+        { message: "📉 Esse single é um flop declarado! Você perdeu 200k na sua faixa", value: -200000 }, // <-- NOVA PUNIÇÃO
+        { message: "⚔️ Sua rival pagou para seu single não hitar! Você perde 10k", value: -10000 }      // <-- NOVA PUNIÇÃO
     ];
+    // ==================================
+    // ======== FIM DA ALTERAÇÃO ========
+    // ==================================
+
 
     function getRandomPunishment() {
         return PUNISHMENT_CONFIG[Math.floor(Math.random() * PUNISHMENT_CONFIG.length)];
@@ -478,7 +487,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             newTotalStreams: newASideTotalStreams
         });
 
-        // --- LÓGICA DE DISTRIBUIÇÃO B-SIDE/MINOR/PRE-RELEASE (ATUALIZADA) ---
+        // --- LÓGICA DE DISTRIBUIÇÃO B-SIDE/MINOR/PRE-RELEASE (ATUALIZADA com Pre-Release Aleatório) ---
         let otherTracksInRelease = [];
         let totalDistributedGain = 0; // Para somar o ganho total distribuído
         let distributionDetails = []; // Para armazenar detalhes da distribuição
@@ -507,7 +516,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         maxPercentage = 0.95; // Pre-releases: máximo 95%
                     }
 
-                    // Calcula o ganho aleatório para B-sides, Minor e Pre-Release
+                    // Calcula o ganho aleatório para TODOS os tipos elegíveis
                     if (maxPercentage > 0) {
                          // Gera um número aleatório entre 0.0 e maxPercentage
                         percentageUsed = getRandomFloat(0, maxPercentage);
@@ -625,6 +634,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ==================================
     // ======== FIM DA ALTERAÇÃO ========
     // ==================================
+
 
     // --- 5. INICIALIZAÇÃO ---
     // Listeners do Modal
