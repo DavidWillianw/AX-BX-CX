@@ -35,39 +35,86 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Chave localStorage
     const PLAYER_NAME_KEY = 'spotifyRpgActions_playerName'; // Mudado para nome para persistência
 
-    // --- Configuração das Ações ---
-    // (minStreams/maxStreams definem o ganho da FAIXA PRINCIPAL)
+    // ==================================
+    // === ACTION_CONFIG ATUALIZADO ===
+    // ==================================
     const ACTION_CONFIG = {
+        // Divulgação Normal
         'promo_tv':         { limit: 10, countField: 'Promo_TV_Count',         localCountKey: 'promo_tv_count',         minStreams: 50000, maxStreams: 100000, isPromotion: true, bonusLocalKey: 'promo_tv_bonus_claimed',         bonusField: 'Promo_TV_Bonus_Claimed' },
         'promo_radio':      { limit: 10, countField: 'Promo_Radio_Count',      localCountKey: 'promo_radio_count',      minStreams: 30000, maxStreams: 70000,  isPromotion: true, bonusLocalKey: 'promo_radio_bonus_claimed',      bonusField: 'Promo_Radio_Bonus_Claimed' },
         'promo_commercial': { limit: 5,  countField: 'Promo_Commercial_Count', localCountKey: 'promo_commercial_count', minStreams: 80000, maxStreams: 150000, isPromotion: true, bonusLocalKey: 'promo_commercial_bonus_claimed', bonusField: 'Promo_Commercial_Bonus_Claimed' },
         'promo_internet':   { limit: 15, countField: 'Promo_Internet_Count',   localCountKey: 'promo_internet_count',   minStreams: 15000, maxStreams: 40000,  isPromotion: true, bonusLocalKey: 'promo_internet_bonus_claimed',   bonusField: 'Promo_Internet_Bonus_Claimed' },
-        'remix':            { limit: 5,  countField: 'Remix_Count',            localCountKey: 'remix_count',            minStreams: 10000, maxStreams: 50000,  isPromotion: false, bonusLocalKey: 'remix_bonus_claimed',            bonusField: 'Remix_Bonus_Claimed' }, // Remix não é promoção, não distribui
-        'mv':               { limit: 3,  countField: 'MV_Count',               localCountKey: 'mv_count',               minStreams: 60000, maxStreams: 120000, isPromotion: false, bonusLocalKey: 'mv_bonus_claimed',               bonusField: 'MV_Bonus_Claimed' }  // MV não é promoção, não distribui
+        
+        // Divulgações Especiais (Limite 3, Ganhos 80k-650k, Não promocionais)
+        'remix':            { limit: 3,  countField: 'Remix_Count',            localCountKey: 'remix_count',            minStreams: 80000, maxStreams: 650000, isPromotion: false, bonusLocalKey: 'remix_bonus_claimed',            bonusField: 'Remix_Bonus_Claimed' },
+        'mv':               { limit: 3,  countField: 'MV_Count',               localCountKey: 'mv_count',               minStreams: 80000, maxStreams: 650000, isPromotion: false, bonusLocalKey: 'mv_bonus_claimed',               bonusField: 'MV_Bonus_Claimed' },
+        'capas_alternativas': { limit: 3,  countField: 'Capas_Count',          localCountKey: 'capas_count',            minStreams: 80000, maxStreams: 650000, isPromotion: false, bonusLocalKey: 'capas_bonus_claimed',          bonusField: 'Capas_Bonus_Claimed' },
+        'parceria_marcas':  { limit: 3,  countField: 'Parceria_Count',         localCountKey: 'parceria_count',         minStreams: 80000, maxStreams: 650000, isPromotion: false, bonusLocalKey: 'parceria_bonus_claimed',       bonusField: 'Parceria_Bonus_Claimed' }
     };
+    // ==================================
+    // ======== FIM DA ALTERAÇÃO ========
+    // ==================================
+
 
     // ==================================
     // === PUNISHMENT_CONFIG ATUALIZADO ===
     // ==================================
-    // --- Configuração de Punições ---
+    // (minLoss/maxLoss são valores POSITIVOS, a função converte para negativo)
     const PUNISHMENT_CONFIG = [
-        { message: "🚫 Opa! Você teve uma fala polêmica na tv e foi cancelada!", value: -12000 },
-        { message: "📉 Seu MV foi acusado de plágio! Que situação...", value: -20000 },
-        { message: "🔥 Vazou uma demo antiga sua e... não é boa.", value: -5000 },
-        { message: "😲 Um influencer famoso criticou sua música.", value: -15000 },
-        { message: "🤷‍♂️ A promoção não deu certo e foi ignorada pelo público.", value: -1000 }, // Punição leve
-        { message: "💔 Um membro do grupo se envolveu em um escândalo de namoro!", value: -25000 },
-        { message: "📉 Esse single é um flop declarado! Você perdeu 200k na sua faixa", value: -200000 }, // <-- NOVA PUNIÇÃO
-        { message: "⚔️ Sua rival pagou para seu single não hitar! Você perde 10k", value: -10000 }      // <-- NOVA PUNIÇÃO
+        { message: "Vish! Seu single foi cancelado por conteúdo impróprio, você perdeu streams.", minLoss: 50000, maxLoss: 500000 },
+        { message: "Problemas de direitos autorais! Sua faixa foi retirada das plataformas, você perdeu streams.", minLoss: 80000, maxLoss: 800000 },
+        { message: "O público achou seu novo clipe constrangedor, você perdeu streams.", minLoss: 25000, maxLoss: 250000 },
+        { message: "Sua música foi banida em alguns países, você perdeu streams.", minLoss: 70000, maxLoss: 700000 },
+        { message: "Lançamento adiado por erro da gravadora, você perdeu streams.", minLoss: 20000, maxLoss: 200000 },
+        { message: "O público odiou a capa do seu single, você perdeu streams.", minLoss: 10000, maxLoss: 100000 },
+        { message: "Clipe foi denunciado e tirado do ar por 48h, você perdeu streams.", minLoss: 50000, maxLoss: 500000 }
+    ];
+    // ==================================
+    // ======== FIM DA ALTERAÇÃO ========
+    // ==================================
+
+    // ==================================
+    // === BONUS_CONFIG (NOVO) ===
+    // ==================================
+    const BONUS_CONFIG = [
+        { message: "Seu single virou trilha de série da Netflix, você ganhou streams!", minGain: 200000, maxGain: 2000000 },
+        { message: "Seu single recebeu aclamação da crítica, você ganhou streams!", minGain: 30000, maxGain: 300000 },
+        { message: "Você fez uma performance viral em um festival, você ganhou streams!", minGain: 70000, maxGain: 700000 },
+        { message: "Parabéns! Você virou trend no TikTok, você recebeu streams!", minGain: 100000, maxGain: 1000000 },
+        { message: "Uma celebridade compartilhou sua música nos stories, você ganhou streams!", minGain: 80000, maxGain: 800000 },
+        { message: "Seu fandom fez streaming party por 24h! Você ganhou streams!", minGain: 30000, maxGain: 300000 }
     ];
     // ==================================
     // ======== FIM DA ALTERAÇÃO ========
     // ==================================
 
 
-    function getRandomPunishment() {
-        return PUNISHMENT_CONFIG[Math.floor(Math.random() * PUNISHMENT_CONFIG.length)];
+    // --- 3. LÓGICA DE AÇÕES RPG ---
+    function getRandomInt(min, max) {
+        min = Math.ceil(min);
+        max = Math.floor(max);
+        return Math.floor(Math.random() * (max - min + 1)) + min;
     }
+
+    // ==================================
+    // === Funções de Bônus/Punição ATUALIZADAS ===
+    // ==================================
+    function getRandomPunishment() {
+        const config = PUNISHMENT_CONFIG[Math.floor(Math.random() * PUNISHMENT_CONFIG.length)];
+        // Gera o valor NEGATIVO da punição
+        const value = -getRandomInt(config.minLoss, config.maxLoss);
+        return { message: config.message, value: value };
+    }
+
+    function getRandomBonus() {
+        const config = BONUS_CONFIG[Math.floor(Math.random() * BONUS_CONFIG.length)];
+        const value = getRandomInt(config.minGain, config.maxGain);
+        return { message: config.message, value: value };
+    }
+    // ==================================
+    // ======== FIM DA ALTERAÇÃO ========
+    // ==================================
+
 
     // --- 1. CARREGAMENTO DE DADOS ---
     async function fetchAllAirtablePages(baseUrl, fetchOptions) {
@@ -119,6 +166,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     RPGPoints: r.fields.RPGPoints || 0,
                     LastActive: r.fields.LastActive || null,
                 };
+                // Este loop agora carrega dinamicamente os novos campos 
+                // (Capas_Count, Parceria_Count, etc.) do ACTION_CONFIG
                 for (const key in ACTION_CONFIG) {
                     const config = ACTION_CONFIG[key];
                     artist[config.localCountKey] = r.fields[config.countField] || 0;
@@ -237,12 +286,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // --- 3. LÓGICA DE AÇÕES RPG ---
-    function getRandomInt(min, max) {
-        min = Math.ceil(min);
-        max = Math.floor(max);
-        return Math.floor(Math.random() * (max - min + 1)) + min;
-    }
 
     // Função auxiliar para gerar float aleatório num intervalo
     function getRandomFloat(min, max) {
@@ -389,7 +432,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         const isMain = track.artistIds[0] === artistId || track.collabType === 'Dueto/Grupo';
-        const limit = isMain ? config.limit : 3;
+        
+        // As ações especiais (limite 3) e Feat (limite 3) usam o mesmo limite
+        let limit;
+        if (config.limit === 3) {
+             limit = 3; // Limite fixo para ações especiais
+        } else {
+             limit = isMain ? config.limit : 3; // Limite normal (10/5/15) ou 3 para Feat.
+        }
+        
 
         const currentCount = artist[config.localCountKey] || 0;
 
@@ -432,7 +483,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!artist || !selectedTrack || !config) { alert("Erro: Dados inválidos (artista, faixa ou config)."); return; }
 
         const isMain = selectedTrack.artistIds[0] === artistId || selectedTrack.collabType === 'Dueto/Grupo';
-        const limit = isMain ? config.limit : 3;
+        
+        // Define o limite
+        let limit;
+        if (config.limit === 3) {
+             limit = 3; // Limite fixo para ações especiais
+        } else {
+             limit = isMain ? config.limit : 3; // Limite normal (10/5/15) ou 3 para Feat.
+        }
+
         const currentCount = artist[config.localCountKey] || 0;
 
         if (currentCount >= limit) {
@@ -448,24 +507,39 @@ document.addEventListener('DOMContentLoaded', async () => {
         const bonusField = config.bonusField;
         const hasClaimedBonus = artist[bonusLocalKey] || false;
 
-        const bonusCheck = Math.random();
-        const punishmentCheck = Math.random();
+        const jackpotCheck = Math.random(); // Check para o Jackpot de Categoria (1%)
+        const eventCheck = Math.random();   // Check para Bônus (5%) ou Punição (5%)
+        
         const newCount = currentCount + 1;
         const artistPatchBody = { fields: { [config.countField]: newCount } };
 
         // Calcula o ganho da faixa principal
-        if (!hasClaimedBonus && bonusCheck < 0.01) { // 1% chance de Jackpot
-            streamsToAdd = 200000;
+        // 1. Chance de Jackpot (Bônus de Categoria Único)
+        if (!hasClaimedBonus && jackpotCheck < 0.01) { // 1% chance
+            streamsToAdd = 200000; // Valor fixo do Jackpot antigo
             eventMessage = "🎉 JACKPOT! Você viralizou inesperadamente e ganhou +200k streams! (Bônus de categoria único)";
             artistPatchBody.fields[bonusField] = true;
             artist[bonusLocalKey] = true;
-        } else if (punishmentCheck < 0.10) { // 10% chance de Punição
+        
+        // 2. Chance de Bônus Aleatório (5% chance)
+        } else if (eventCheck < 0.05) { 
+            const bonus = getRandomBonus();
+            streamsToAdd = bonus.value;
+            eventMessage = `✨ BÔNUS! ${bonus.message}`;
+
+        // 3. Chance de Punição Aleatória (5% chance)
+        } else if (eventCheck >= 0.05 && eventCheck < 0.10) { 
             const punishment = getRandomPunishment();
             streamsToAdd = punishment.value;
-            eventMessage = punishment.message;
-        } else { // Ganho normal
+            eventMessage = `📉 PUNIÇÃO! ${punishment.message}`;
+
+        // 4. Ganho Normal (90% chance)
+        } else { 
             streamsToAdd = getRandomInt(config.minStreams, config.maxStreams);
         }
+        
+        // --- Fim da lógica de Ganhos/Eventos ---
+
 
         const allTrackPatchData = [];
         const trackUpdatesLocal = [];
@@ -492,7 +566,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         let totalDistributedGain = 0; // Para somar o ganho total distribuído
         let distributionDetails = []; // Para armazenar detalhes da distribuição
 
-        // Só distribui se for PROMOÇÃO, ganho POSITIVO e artista for MAIN/DUETO
+        // Só distribui se for PROMOÇÃO (isPromotion: true), ganho POSITIVO e artista for MAIN/DUETO
         if (config.isPromotion && streamsToAdd > 0 && isMain) {
             const releaseId = selectedTrack.release;
             if (releaseId) {
@@ -615,7 +689,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             alertMessage += `📊 Uso da Ação: ${newCount}/${limit}`;
 
-            if (!isMain) {
+            // Adiciona aviso de Feat. se não for Main E a ação não for especial (limite 3)
+            if (!isMain && config.limit !== 3) {
                 alertMessage += ` (Limite de 3 usos para participações "Feat.")`;
             }
 
