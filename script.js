@@ -40,16 +40,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ==================================
     const ACTION_CONFIG = {
         // Divulgação Normal
-        'promo_tv':         { limit: 10, countField: 'Promo_TV_Count',         localCountKey: 'promo_tv_count',         minStreams: 50000, maxStreams: 100000, isPromotion: true, bonusLocalKey: 'promo_tv_bonus_claimed',         bonusField: 'Promo_TV_Bonus_Claimed' },
-        'promo_radio':      { limit: 10, countField: 'Promo_Radio_Count',      localCountKey: 'promo_radio_count',      minStreams: 30000, maxStreams: 70000,  isPromotion: true, bonusLocalKey: 'promo_radio_bonus_claimed',      bonusField: 'Promo_Radio_Bonus_Claimed' },
-        'promo_commercial': { limit: 5,  countField: 'Promo_Commercial_Count', localCountKey: 'promo_commercial_count', minStreams: 80000, maxStreams: 150000, isPromotion: true, bonusLocalKey: 'promo_commercial_bonus_claimed', bonusField: 'Promo_Commercial_Bonus_Claimed' },
-        'promo_internet':   { limit: 15, countField: 'Promo_Internet_Count',   localCountKey: 'promo_internet_count',   minStreams: 15000, maxStreams: 40000,  isPromotion: true, bonusLocalKey: 'promo_internet_bonus_claimed',   bonusField: 'Promo_Internet_Bonus_Claimed' },
+        'promo_tv':         { limit: 20, countField: 'Promo_TV_Count',         localCountKey: 'promo_tv_count',         minStreams: 50000, maxStreams: 500000, isPromotion: true, bonusLocalKey: 'promo_tv_bonus_claimed',         bonusField: 'Promo_TV_Bonus_Claimed' },
+        'promo_radio':      { limit: 20, countField: 'Promo_Radio_Count',      localCountKey: 'promo_radio_count',      minStreams: 30000, maxStreams: 70000,  isPromotion: true, bonusLocalKey: 'promo_radio_bonus_claimed',      bonusField: 'Promo_Radio_Bonus_Claimed' },
+        'promo_commercial': { limit: 10,  countField: 'Promo_Commercial_Count', localCountKey: 'promo_commercial_count', minStreams: 80000, maxStreams: 250000, isPromotion: true, bonusLocalKey: 'promo_commercial_bonus_claimed', bonusField: 'Promo_Commercial_Bonus_Claimed' },
+        'promo_internet':   { limit: 30, countField: 'Promo_Internet_Count',   localCountKey: 'promo_internet_count',   minStreams: 15000, maxStreams: 300000,  isPromotion: true, bonusLocalKey: 'promo_internet_bonus_claimed',   bonusField: 'Promo_Internet_Bonus_Claimed' },
         
         // Divulgações Especiais (Limite 3, Ganhos 80k-650k, Não promocionais)
-        'remix':            { limit: 3,  countField: 'Remix_Count',            localCountKey: 'remix_count',            minStreams: 80000, maxStreams: 650000, isPromotion: false, bonusLocalKey: 'remix_bonus_claimed',            bonusField: 'Remix_Bonus_Claimed' },
-        'mv':               { limit: 3,  countField: 'MV_Count',               localCountKey: 'mv_count',               minStreams: 80000, maxStreams: 650000, isPromotion: false, bonusLocalKey: 'mv_bonus_claimed',               bonusField: 'MV_Bonus_Claimed' },
-        'capas_alternativas': { limit: 3,  countField: 'Capas_Count',          localCountKey: 'capas_count',            minStreams: 80000, maxStreams: 650000, isPromotion: false, bonusLocalKey: 'capas_bonus_claimed',          bonusField: 'Capas_Bonus_Claimed' },
-        'parceria_marcas':  { limit: 3,  countField: 'Parceria_Count',         localCountKey: 'parceria_count',         minStreams: 80000, maxStreams: 650000, isPromotion: false, bonusLocalKey: 'parceria_bonus_claimed',       bonusField: 'Parceria_Bonus_Claimed' }
+        'remix':            { limit: 5,  countField: 'Remix_Count',            localCountKey: 'remix_count',            minStreams: 80000, maxStreams: 650000, isPromotion: false, bonusLocalKey: 'remix_bonus_claimed',            bonusField: 'Remix_Bonus_Claimed' },
+        'mv':               { limit: 5,  countField: 'MV_Count',               localCountKey: 'mv_count',               minStreams: 80000, maxStreams: 650000, isPromotion: false, bonusLocalKey: 'mv_bonus_claimed',               bonusField: 'MV_Bonus_Claimed' },
+        'capas_alternativas': { limit: 5,  countField: 'Capas_Count',          localCountKey: 'capas_count',            minStreams: 80000, maxStreams: 650000, isPromotion: false, bonusLocalKey: 'capas_bonus_claimed',          bonusField: 'Capas_Bonus_Claimed' },
+        'parceria_marcas':  { limit: 5,  countField: 'Parceria_Count',         localCountKey: 'parceria_count',         minStreams: 80000, maxStreams: 650000, isPromotion: false, bonusLocalKey: 'parceria_bonus_claimed',       bonusField: 'Parceria_Bonus_Claimed' }
     };
     // ==================================
     // ======== FIM DA ALTERAÇÃO ========
@@ -435,10 +435,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // As ações especiais (limite 3) e Feat (limite 3) usam o mesmo limite
         let limit;
-        if (config.limit === 3) {
-             limit = 3; // Limite fixo para ações especiais
+        if (config.limit === 5) {
+             limit = 5; // Limite fixo para ações especiais
         } else {
-             limit = isMain ? config.limit : 3; // Limite normal (10/5/15) ou 3 para Feat.
+             limit = isMain ? config.limit : 5; // Limite normal (10/5/15) ou 3 para Feat.
         }
         
 
@@ -486,10 +486,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Define o limite
         let limit;
-        if (config.limit === 3) {
-             limit = 3; // Limite fixo para ações especiais
+        if (config.limit === 5) {
+             limit = 5; // Limite fixo para ações especiais
         } else {
-             limit = isMain ? config.limit : 3; // Limite normal (10/5/15) ou 3 para Feat.
+             limit = isMain ? config.limit : 5; // Limite normal (10/5/15) ou 3 para Feat.
         }
 
         const currentCount = artist[config.localCountKey] || 0;
@@ -690,8 +690,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             alertMessage += `📊 Uso da Ação: ${newCount}/${limit}`;
 
             // Adiciona aviso de Feat. se não for Main E a ação não for especial (limite 3)
-            if (!isMain && config.limit !== 3) {
-                alertMessage += ` (Limite de 3 usos para participações "Feat.")`;
+            if (!isMain && config.limit !== 5) {
+                alertMessage += ` (Limite de 5 usos para participações "Feat.")`;
             }
 
             alert(alertMessage);
