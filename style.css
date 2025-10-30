@@ -298,8 +298,6 @@ h3 {
   background: #3a3a3a;
 }
 
-/* REMOVIDO: Seletores antigos (actionCooldownInfo, remixCountInfo) */
-
 
 /* --- FOOTER LINK --- */
 .footer-link {
@@ -329,7 +327,7 @@ h3 {
     }
     h2 {
       font-size: 18px;
-    }
+  A   }
     
     /* Lista de Artista (Mobile) */
     /* Não precisa de wrap, o flex: 1 no nome já resolve */
@@ -365,7 +363,7 @@ h3 {
     /* Botões do Modal (Mobile) */
     .action-modal-content .modal-actions {
         flex-direction: column; /* Botões empilhados */
-        gap: 12px;
+t       gap: 12px;
     }
     .action-modal-content .modal-actions button {
         width: 100%;
