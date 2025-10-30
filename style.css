@@ -105,10 +105,9 @@ h2 {
 /* Estilo para lista de artistas na página principal */
 #artistActionsList .artist-action-item {
     display: flex;
-    justify-content: space-between;
     align-items: center;
     background-color: var(--background-tertiary);
-    padding: 15px;
+    padding: 13px;
     border-radius: 8px;
     cursor: pointer;
     transition: background-color 0.2s ease;
