@@ -169,8 +169,15 @@ h2 {
 }
 
 .action-modal-content .modal-actions { display: flex; gap: 10px; margin-top: 24px; }
-.action-modal-content .modal-actions .submit-btn { width: auto; flex-grow: 1; margin: 0;}
-.action-modal-content .modal-actions .cancel-btn {
+.action-modal-content .modal-actions .submit-btn {
+    width: auto;
+    flex-grow: 1;
+    margin: 0;
+    margin-bottom: -26px;
+    margin-top: -43px;
+}
+
+@.action-modal-content .modal-actions .cancel-btn {
   background: var(--background-tertiary); color: var(--text-primary); border: 1px solid #535353;
   padding: 14px 20px; border-radius: 500px; font-weight: 600; cursor: pointer; margin: 0;
   width: auto; flex-grow: 1;
