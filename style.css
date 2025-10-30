@@ -250,6 +250,7 @@ h2 {
         padding: 12px; /* Menor padding nos selects */
         padding-right: 35px; /* Ajuste para seta */
         background-position: right 12px center;
+      margin-bottom: -15px;
     }
 
 }
