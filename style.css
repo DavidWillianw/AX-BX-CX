@@ -98,42 +98,34 @@ h2 {
 
 /* --- LISTA DE AÇÕES --- */
 #artistActionsList {
-    display: flex;
-    flex-direction: column;
-    gap: 10px; /* Menor */
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
 }
 /* Estilo para lista de artistas na página principal */
 #artistActionsList .artist-action-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: var(--background-tertiary);
-    padding: 12px 15px; /* Mais enxuto */
-    border-radius: 8px;
-    transition: background-color 0.2s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--background-tertiary);
+    padding: 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
 }
 #artistActionsList .artist-action-item:hover {
-    background-color: #3a3a3a;
+    background-color: #3a3a3a;
 }
-
-/* Este é o seletor CORRETO que alinha o <span> */
-#artistActionsList .artist-action-item > span {
-    font-weight: 600;
-    font-size: 16px;
-    margin-right: 15px;
-    
-    /* Isso impede a quebra e adiciona "..." */
-    flex: 1;
-    min-width: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+#artistActionsList .artist-action-item .artist-name {
+     font-weight: 600;
+     font-size: 16px;
+     margin-right: 15px;
+     white-space: nowrap;
+     overflow: hidden;
+     text-overflow: ellipsis;
+     flex-grow: 1; /* Permite que o nome ocupe espaço */
 }
-/* Seletor correto para a DIV do botão */
-#artistActionsList .artist-action-item .artist-action-buttons {
-    flex-shrink: 0; /* Impede o botão de encolher */
-    margin-left: auto; /* Garante que fique à direita */
-}#artistActionsList .artist-action-item .open-actions-icon {
+#artistActionsList .artist-action-item .open-actions-icon {
     color: var(--text-secondary);
     margin-left: auto;
     padding-left: 15px;
