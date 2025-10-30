@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const actionModal = document.getElementById('actionModal');
     const modalArtistName = document.getElementById('modalArtistName');
     const modalArtistId = document.getElementById('modalArtistId');
-    const releaseSelectWrapper = document.getElementById('releaseSelectWrapper'); // NOVO
+    const releaseSelectWrapper = document.getElementById('releaseSelectWrapper'); // NOVO
     const releaseSelect = document.getElementById('releaseSelect');
     const trackSelectWrapper = document.getElementById('trackSelectWrapper');
     const trackSelect = document.getElementById('trackSelect');
@@ -158,7 +158,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 fetchAllAirtablePages(playersURL, fetchOptions),
                 fetchAllAirtablePages(albumsURL, fetchOptions),
                 fetchAllAirtablePages(singlesURL, fetchOptions),
-      _           fetchAllAirtablePages(tracksURL, fetchOptions)
+                fetchAllAirtablePages(tracksURL, fetchOptions) // LINHA 161 - AGORA CORRIGIDA
             ]);
 
             if (!artistsData || !playersData || !albumsData || !singlesData || !tracksData) {
@@ -202,10 +202,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 name: r.fields['Nome do Álbum'] || 'Álbum?',
                 artists: r.fields['Artista'] || []
             }));
-            singlesData.records.forEach(r => allReleases.push({
+      _       singlesData.records.forEach(r => allReleases.push({
                 id: r.id,
                 name: r.fields['Nome do Single/EP'] || 'Single?',
-              _ artists: r.fields['Artista'] || []
+                artists: r.fields['Artista'] || [] // Artista principal ou Dueto
             }));
             db.releases = allReleases;
 
@@ -711,7 +711,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (bSideTypes.includes(otherTrack.trackType)) {
                         maxPercentage = 0.30; // B-sides: máximo 30%
                         // APLICA O NERF de álbum grande
-                        if (isLargeAlbum) {
+                      _ if (isLargeAlbum) {
                             maxPercentage = 0.15; // Reduzido pela metade
                         }
                     } else if (minorTypes.includes(otherTrack.trackType)) {
@@ -741,12 +741,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                         let detailMsg = `   +${gain.toLocaleString('pt-BR')} para "${otherTrack.name}" (${(percentageUsed * 100).toFixed(1)}%)`;
                         if (isLargeAlbum && bSideTypes.includes(otherTrack.trackType)) {
                             detailMsg += " (Nerf Álbum Grande)";
-                        }
+                    _   }
                         distributionDetails.push(detailMsg);
                     }
                 });
             } else {
-                console.warn(`Faixa ${selectedTrack.name} (ID: ${selectedTrack.id}) não está associada a um lançamento. Distribuição ignorada.`);
+        _       console.warn(`Faixa ${selectedTrack.name} (ID: ${selectedTrack.id}) não está associada a um lançamento. Distribuição ignorada.`);
             }
         }
 
@@ -768,7 +768,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 allPromises.push(fetch(trackPatchUrlBase, {
                     ...fetchOptionsPatch,
                     body: JSON.stringify({ records: chunk })
-                }));
+    _           }));
             });
 
             const responses = await Promise.all(allPromises);
@@ -780,7 +780,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (failedResponse) {
                     try {
                         const errorJson = await failedResponse.json();
-                        errorDetails = JSON.stringify(errorJson.error || errorJson);
+          _               errorDetails = JSON.stringify(errorJson.error || errorJson);
                     } catch (e) { /* ignora */ }
                 }
                 const failedIndex = responses.findIndex(response => !response.ok);
@@ -831,7 +831,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             confirmActionButton.disabled = false;
             confirmActionButton.textContent = 'Confirmar Ação';
             updateActionLimitInfo();
-        }
+  _   }
     }
     // ==================================
     // ======== FIM DA ALTERAÇÃO ========
