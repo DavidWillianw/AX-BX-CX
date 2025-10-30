@@ -254,3 +254,77 @@ h2 {
     }
 
 }
+
+/* ==============================================
+=== ADIÇÕES E CORREÇÕES - PODE COLAR NO FIM ===
+==============================================
+*/
+
+/* * 1. CORREÇÃO DO NOME E PONTOS DO ARTISTA
+ * O seu JS cria um <span...>, mas o seu CSS procurava uma classe ".artist-name".
+ * Este novo seletor corrige isso, alinhando o nome e os pontos corretamente,
+ * e impedindo que o texto "vaze" ou empurre o botão.
+*/
+#artistActionsList .artist-action-item > span {
+    font-weight: 600;
+    font-size: 16px;
+    margin-right: 15px;
+    
+    /* Isso força o alinhamento correto e o "..." no final */
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* * 2. CORREÇÃO DO MODAL MUITO GRANDE (MOBILE)
+ * Isso faz o modal ter uma altura máxima (90% da tela)
+ * e adiciona uma barra de rolagem INTERNA se as opções não couberem.
+*/
+.modal-content {
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+/* * 3. MELHORIAS GERAIS PARA MOBILE (Dentro da sua @media query)
+*/
+@media (max-width: 480px) {
+
+  /*    * Ajusta o modal para ser menor e ter menos padding no mobile.
+   */
+  .modal-overlay {
+      padding: 10px; /* Garante que o modal não cole nas bordas */
+  }
+  .modal-content {
+      padding: 20px; /* Menos padding interno no mobile */
+  }
+  .modal-content h3 {
+      font-size: 20px; /* Fonte do título do modal menor */
+  }
+
+  /*    * CORREÇÃO MAIS IMPORTANTE: Impede o "ZOOM" automático no iOS.
+   * Ao definir a fonte como 16px, o iPhone não tenta mais dar zoom
+   * quando você clica no <select>.
+   */
+  .action-modal-content .studio-form-group select,
+  .studio-login-wrapper input {
+      font-size: 16px; /* Impede o zoom no iOS */
+  }
+
+  /*    * Garante que o item do artista na lista principal
+   * não quebre a linha e alinhe corretamente no mobile.
+   */
+  .artist-action-item {
+      flex-wrap: nowrap; /* Impede a quebra de linha */
+      gap: 0; /* Remove o gap que você tinha */
+  }
+  .artist-action-item .artist-action-buttons {
+      flex-shrink: 0; /* Impede que o botão encolha */
+      margin-left: auto;
+  }
+  /* Remove o seletor antigo que não funciona */
+  .artist-action-item .open-actions-icon {
+      display: none;
+  }
+}
