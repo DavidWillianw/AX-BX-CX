@@ -14,7 +14,11 @@
   padding: 0;
   box-sizing: border-box;
 }
-
+.action-modal-content .modal-actions .cancel-btn {
+  background: var(--background-tertiary); color: var(--text-primary); border: 1px solid #535353;
+  padding: 14px 20px; border-radius: 500px; font-weight: 600; cursor: pointer; margin: 0;
+  width: auto; flex-grow: 1;
+}
 body {
   font-family: "Montserrat", sans-serif;
   background-color: var(--background-primary);
