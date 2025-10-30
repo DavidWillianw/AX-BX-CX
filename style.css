@@ -1,256 +1,374 @@
 /* --- VARIAVEIS E ESTILOS GLOBAIS --- */
 :root {
-  --spotify-green: #1db954;
-  --background-primary: #121212;
-  --background-secondary: #181818;
-  --background-tertiary: #282828;
-  --text-primary: #ffffff;
-  --text-secondary: #b3b3b3;
-  --trend-down-red: #e22134;
+  --spotify-green: #1db954;
+  --background-primary: #121212;
+  --background-secondary: #181818;
+  --background-tertiary: #282828;
+  --text-primary: #ffffff;
+  --text-secondary: #b3b3b3;
+  --trend-down-red: #e22134;
+  --button-hover-green: #1ed760;
 }
 
 * {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 body {
-  font-family: "Montserrat", sans-serif;
-  background-color: var(--background-primary);
-  color: var(--text-primary);
-  padding: 20px;
+  font-family: "Montserrat", sans-serif;
+  background-color: var(--background-primary);
+  color: var(--text-primary);
+  padding: 20px;
+  min-height: 100vh;
 }
 
-.hidden { display: none !important; }
+.hidden { 
+  display: none !important; 
+}
 
 /* --- Container Principal (Página de Ações) --- */
 .container {
-  max-width: 600px;
-  margin: 20px auto;
-  background-color: var(--background-secondary);
-  padding: 30px;
-  border-radius: 12px;
+  max-width: 600px;
+  margin: 20px auto;
+  background-color: var(--background-secondary);
+  padding: 30px;
+  border-radius: 12px;
 }
 
 h1 {
-  color: var(--spotify-green);
-  text-align: center;
-  margin-bottom: 30px;
+  color: var(--spotify-green);
+  text-align: center;
+  margin-bottom: 30px;
+  font-size: 28px;
 }
 h2 {
-    margin-top: 30px;
-    margin-bottom: 15px;
-    border-bottom: 1px solid var(--background-tertiary);
-    padding-bottom: 10px;
+    margin-top: 30px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid var(--background-tertiary);
+    padding-bottom: 10px;
+    font-size: 20px;
+}
+h3 {
+  font-size: 22px;
 }
 
-/* --- ESTILOS DO LOGIN (copiados/adaptados) --- */
+/* --- ESTILOS DE FORMULÁRIO GLOBAIS (Unificados) --- */
+.studio-form-group label {
+  display: block; 
+  font-size: 12px; 
+  font-weight: 700;
+  color: var(--text-secondary); 
+  margin-bottom: 8px; 
+  text-transform: uppercase;
+}
+
+/* Estilo unificado para inputs e selects */
+.studio-form-group input[type="text"],
+.studio-form-group input[type="password"],
+.studio-form-group select {
+  width: 100%; 
+  background-color: var(--background-tertiary);
+  border: 1px solid #535353; 
+  color: var(--text-primary); 
+  padding: 14px;
+  border-radius: 6px; 
+  font-size: 15px; /* Tamanho bom para desktop */
+  font-family: "Montserrat", sans-serif;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.studio-form-group input[type="text"]:focus,
+.studio-form-group input[type="password"]:focus,
+.studio-form-group select:focus {
+  border-color: var(--spotify-green);
+  box-shadow: 0 0 0 1px var(--spotify-green);
+  outline: none;
+}
+
+/* Estilo específico para Selects (seta) */
+.studio-form-group select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23b3b3b3' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10L8 11z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 12px;
+  padding-right: 40px; /* Espaço para a seta */
+}
+
+.studio-form-group select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: #282828;
+}
+
+/* --- Wrapper de Login --- */
 .studio-login-wrapper {
-  background-color: var(--background-primary);
-  padding: 24px;
-  border-radius: 12px;
-  margin-bottom: 24px;
+  background-color: var(--background-primary);
+  padding: 24px;
+  border-radius: 12px;
+  margin-bottom: 24px;
 }
-.studio-login-wrapper label {
-  display: block; font-size: 12px; font-weight: 700;
-  color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase;
-}
-.studio-login-wrapper select {
-  width: 100%; background-color: var(--background-tertiary);
-  border: 1px solid #535353; color: var(--text-primary); padding: 14px;
-  border-radius: 6px; font-size: 14px; font-family: "Montserrat", sans-serif;
-  margin-bottom: 16px;
-  appearance: none; /* Remove seta padrão */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23b3b3b3' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10L8 11z'/%3E%3C/svg%3E"); /* Adiciona seta customizada */
-  background-repeat: no-repeat;
-  background-position: right 14px center;
-  background-size: 12px;
-  padding-right: 40px; /* Espaço para a seta */
-}
-.studio-login-wrapper select:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+.studio-login-wrapper .studio-form-group {
+  margin-bottom: 16px;
 }
 
-#loggedInInfo p { font-size: 14px; color: var(--text-secondary); }
-#loggedInInfo p strong { color: var(--text-primary); }
-#loggedInInfo { display: flex; justify-content: space-between; align-items: center; }
+#loggedInInfo p { 
+  font-size: 14px; 
+  color: var(--text-secondary); 
+}
+#loggedInInfo p strong { 
+  color: var(--text-primary); 
+}
+#loggedInInfo { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+}
 
-/* --- BOTÕES (copiados/adaptados) --- */
+/* --- BOTÕES --- */
 .submit-btn {
-  background-color: var(--spotify-green); color: black; border: none;
-  padding: 16px 24px; width: 100%; border-radius: 500px; font-size: 16px;
-  font-weight: 700; cursor: pointer; margin-top: 16px;
-  transition: transform 0.2s ease, background-color 0.2s ease;
+  background-color: var(--spotify-green); 
+  color: black; 
+  border: none;
+  padding: 16px 24px; 
+  width: 100%; 
+  border-radius: 500px; 
+  font-size: 16px;
+  font-weight: 700; 
+  cursor: pointer; 
+  margin-top: 16px;
+  transition: transform 0.2s ease, background-color 0.2s ease;
 }
-.submit-btn:hover:not(:disabled) { transform: scale(1.02); background-color: #1ed760; }
-.submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.submit-btn:hover:not(:disabled) { 
+  transform: scale(1.02); 
+  background-color: var(--button-hover-green); 
+}
+.submit-btn:disabled { 
+  opacity: 0.5; 
+  cursor: not-allowed; 
+}
 
 .small-btn {
-  background: transparent; border: 1px solid var(--spotify-green);
-  color: var(--spotify-green); padding: 6px 10px; border-radius: 6px;
-  font-weight: 700; cursor: pointer; margin-left: 6px; font-size: 12px;
+  background: transparent; 
+  border: 1px solid var(--spotify-green);
+  color: var(--spotify-green); 
+  padding: 8px 12px; /* Um pouco maior */
+  border-radius: 500px; /* Arredondado */
+  font-weight: 700; 
+  cursor: pointer; 
+  margin-left: 6px; 
+  font-size: 12px;
+  white-space: nowrap; /* Impede que o texto quebre */
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
-.small-btn:hover:not(:disabled) { background: rgba(29, 185, 84, 0.1); }
-.small-btn:disabled { opacity: 0.5; cursor: not-allowed; border-color: var(--text-secondary); color: var(--text-secondary); }
-.small-btn i { margin-right: 4px; }
+.small-btn:hover:not(:disabled) { 
+  background: var(--spotify-green);
+  color: var(--background-primary);
+}
+.small-btn:disabled { 
+  opacity: 0.5; 
+  cursor: not-allowed; 
+  border-color: var(--text-secondary); 
+  color: var(--text-secondary); 
+  background: transparent;
+}
 
-/* --- LISTA DE AÇÕES --- */
+/* --- LISTA DE ARTISTAS (CORRIGIDO) --- */
 #artistActionsList {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px; /* Menor gap */
 }
-/* Estilo para lista de artistas na página principal */
+
 #artistActionsList .artist-action-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: var(--background-tertiary);
-    padding: 15px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--background-tertiary);
+    padding: 12px 15px;
+    border-radius: 8px;
+    transition: background-color 0.2s ease;
 }
 #artistActionsList .artist-action-item:hover {
-    background-color: #3a3a3a;
+    background-color: #3a3a3a;
 }
-#artistActionsList .artist-action-item .artist-name {
-     font-weight: 600;
-     font-size: 16px;
-     margin-right: 15px;
-     white-space: nowrap;
-     overflow: hidden;
-     text-overflow: ellipsis;
-     flex-grow: 1; /* Permite que o nome ocupe espaço */
+
+/* Seletor do nome do artista (Span) */
+#artistActionsList .artist-action-item > span {
+    font-weight: 600;
+    font-size: 16px;
+    margin-right: 15px;
+    
+    /* Truque para truncar texto em flexbox */
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
-#artistActionsList .artist-action-item .open-actions-icon {
-    color: var(--text-secondary);
-    margin-left: auto;
-    padding-left: 15px;
-    flex-shrink: 0;
+
+/* Seletor da div dos botões */
+#artistActionsList .artist-action-item .artist-action-buttons {
+    flex-shrink: 0; /* Impede que o botão encolha */
 }
 
 
 /* --- MODAL DE AÇÃO --- */
 .modal-overlay {
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); display: flex;
-  align-items: center; justify-content: center; z-index: 1000; animation: fadeIn 0.3s ease;
+  position: fixed; 
+  top: 0; 
+  left: 0; 
+  width: 100%; 
+  height: 100%; 
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(5px); 
+  -webkit-backdrop-filter: blur(5px); 
+  display: flex;
+  align-items: center; 
+  justify-content: center; 
+  z-index: 1000; 
+  padding: 10px; /* Adiciona padding para mobile */
 }
+
 .modal-content {
-  background: var(--background-secondary); padding: 24px; border-radius: 12px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5); max-width: 450px;
-  width: 90%;
+  background: var(--background-secondary); 
+  padding: 30px; /* Mais padding no desktop */
+  border-radius: 12px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5); 
+  max-width: 450px;
+  width: 100%; /* Ocupa 100% do espaço (limitado pelo max-width) */
 }
-.modal-content h3 { color: var(--spotify-green); margin-bottom: 20px; text-align: center; }
+.modal-content h3 { 
+  color: var(--spotify-green); 
+  margin-bottom: 25px; 
+  text-align: center; 
+}
 
 /* Adapta os estilos de formulário */
-.action-modal-content .studio-form-group { margin-bottom: 16px; } /* Adicionado */
-.action-modal-content .studio-form-group label {
-  display: block; font-size: 12px; font-weight: 700;
-  color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase;
+.action-modal-content .studio-form-group { 
+  margin-bottom: 16px; 
 }
 .action-modal-content .studio-form-group select {
-  width: 100%; background-color: var(--background-tertiary);
-  border: 1px solid #535353; color: var(--text-primary); padding: 14px;
-  border-radius: 6px; font-size: 14px; font-family: "Montserrat", sans-serif;
-  margin-bottom: 0px; /* Removido margin-bottom do select */
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23b3b3b3' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10L8 11z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 14px center;
-  background-size: 12px;
-  padding-right: 40px;
-}
-.action-modal-content .studio-form-group select:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  margin-bottom: 0; /* Remove margem duplicada */
 }
 
-.action-modal-content .modal-actions { display: flex; gap: 10px; margin-top: 24px; }
-.action-modal-content .modal-actions .submit-btn { width: auto; flex-grow: 1; margin: 0;}
+/* NOVO: Info de Limite de Ação */
+#actionLimitInfo {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 15px; 
+    background-color: var(--background-tertiary);
+    padding: 10px 14px;
+    border-radius: 6px;
+    text-align: center;
+}
+#actionLimitInfo span {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+/* O JS vai aplicar a cor vermelha direto no #currentActionCount se o limite for atingido */
+
+
+.action-modal-content .modal-actions { 
+  display: flex; 
+  gap: 10px; 
+  margin-top: 24px; 
+}
+.action-modal-content .modal-actions .submit-btn { 
+  width: auto; 
+  flex-grow: 1; 
+  margin: 0;
+}
 .action-modal-content .modal-actions .cancel-btn {
-  background: var(--background-tertiary); color: var(--text-primary); border: 1px solid #535353;
-  padding: 14px 20px; border-radius: 500px; font-weight: 600; cursor: pointer; margin: 0;
-  width: auto; flex-grow: 1;
+  background: var(--background-tertiary); 
+  color: var(--text-primary); 
+  border: 1px solid #535353;
+  padding: 14px 20px; 
+  border-radius: 500px; 
+  font-weight: 600; 
+  cursor: pointer; 
+  margin: 0;
+  width: auto; 
+  flex-grow: 1;
+  transition: background-color 0.2s ease;
 }
-#actionCooldownInfo {
-   font-size: 11px;
-   color: var(--trend-down-red);
-   text-align: center;
-   margin-top: 10px;
-   height: 1.2em;
-   font-weight: 500;
+.action-modal-content .modal-actions .cancel-btn:hover {
+  background: #3a3a3a;
 }
-#remixCountInfo {
-    font-size: 12px;
-    color: var(--text-secondary);
-    margin-top: 10px; /* Adicionado espaço acima */
-    margin-bottom: 10px; /* Reduzido espaço abaixo */
-    background-color: var(--background-tertiary);
-    padding: 8px 12px;
-    border-radius: 4px;
-    text-align: center;
-}
-#remixCountInfo #currentRemixCount {
-    font-weight: bold;
-    color: var(--text-primary);
-}
+
+/* REMOVIDO: Seletores antigos (actionCooldownInfo, remixCountInfo) */
 
 
 /* --- FOOTER LINK --- */
 .footer-link {
-    margin-top: 30px;
-    text-align: center;
+    margin-top: 30px;
+    text-align: center;
 }
 .footer-link a {
-    color: var(--text-secondary);
-    font-size: 14px;
-    text-decoration: none;
+    color: var(--text-secondary);
+    font-size: 14px;
+    text-decoration: none;
 }
 .footer-link a:hover {
-    color: var(--spotify-green);
-    text-decoration: underline;
+    color: var(--spotify-green);
+    text-decoration: underline;
 }
 
-/* --- RESPONSIVIDADE --- */
+/* --- RESPONSIVIDADE (MOBILE) --- */
 @media (max-width: 480px) {
-    body {
-        padding: 10px; /* Menos padding no body */
-    }
-    .container {
-        padding: 15px;
-    }
-     /* Na lista de artistas, força quebra de linha se necessário */
-    .artist-action-item {
-        flex-wrap: wrap;
-        gap: 10px;
-    }
-     .artist-action-item .artist-name {
-        max-width: 100%;
-        margin-right: 0;
-    }
-     .artist-action-item .open-actions-icon {
-        margin-left: 0;
-        width: 100%;
-        text-align: right;
-    }
+    body {
+        padding: 10px; /* Menos padding no body */
+    }
+    .container {
+        padding: 20px; /* Padding bom para mobile */
+    }
+    h1 {
+      font-size: 24px;
+    }
+    h2 {
+      font-size: 18px;
+    }
+    
+    /* Lista de Artista (Mobile) */
+    /* Não precisa de wrap, o flex: 1 no nome já resolve */
+    #artistActionsList .artist-action-item {
+      padding: 10px 12px;
+    }
+    #artistActionsList .artist-action-item > span {
+      font-size: 15px; /* Um pouco menor */
+    }
+    .small-btn {
+      padding: 6px 10px; /* Botão menor no mobile */
+    }
 
-    .modal-content {
-        padding: 15px;
-    }
-    .action-modal-content .modal-actions {
-        flex-direction: column;
-    }
-     .action-modal-content .modal-actions button {
-        width: 100%;
-    }
-    .action-modal-content .studio-form-group select {
-        padding: 12px; /* Menor padding nos selects */
-        padding-right: 35px; /* Ajuste para seta */
-        background-position: right 12px center;
-    }
+    /* Modal (Mobile) */
+    .modal-content {
+        padding: 20px; /* Padding bom para modal mobile */
+    }
+    .modal-content h3 {
+      font-size: 20px;
+      margin-bottom: 20px;
+    }
 
+    /* Prevenção de Zoom no iOS */
+    .studio-form-group input[type="text"],
+    .studio-form-group input[type="password"],
+    .studio-form-group select {
+      font-size: 16px; /* Mínimo de 16px para evitar zoom */
+      padding: 12px;
+      padding-right: 35px; /* Ajuste para seta no select */
+      background-position: right 12px center;
+    }
+
+    /* Botões do Modal (Mobile) */
+    .action-modal-content .modal-actions {
+        flex-direction: column; /* Botões empilhados */
+        gap: 12px;
+    }
+    .action-modal-content .modal-actions button {
+        width: 100%;
+        padding: 14px; /* Padding consistente */
+    }
 }
