@@ -786,7 +786,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             detailMsg += " (Nerf Álbum Grande)";
                         }
                         distributionDetails.push(detailMsg);
-section             }
+                    }
                 });
             } else {
                console.warn(`Faixa ${selectedTrack.name} (ID: ${selectedTrack.id}) não está associada a um lançamento. Distribuição ignorada.`);
@@ -827,13 +827,13 @@ section             }
                     } catch (e) { /* ignora */ }
                 }
                 const failedIndex = responses.findIndex(response => !response.ok);
-nd           const failedEntity = failedIndex === 0 ? 'Artista' : `Faixas (chunk ${failedIndex})`;
+                const failedEntity = failedIndex === 0 ? 'Artista' : `Faixas (chunk ${failedIndex})`;
                 throw new Error(`Falha ao salvar: ${failedEntity} (${errorDetails})`);
             }
 
             // Atualiza DB local
             artist[config.localCountKey] = newCount;
-  _         trackUpdatesLocal.forEach(update => {
+            trackUpdatesLocal.forEach(update => {
                 const trackInDb = db.tracks.find(t => t.id === update.id);
                 if (trackInDb) {
                     trackInDb.streams = update.newStreams;
@@ -862,7 +862,7 @@ nd           const failedEntity = failedIndex === 0 ? 'Artista' : `Faixas (
 
             if (!isMain && config.limit !== 5) {
                 alertMessage += ` (Limite de 5 usos para participações "Feat.")`;
-também         }
+            }
 
             alert(alertMessage);
             actionModal.classList.add('hidden');
@@ -874,14 +874,14 @@ também         }
             confirmActionButton.disabled = false;
             confirmActionButton.textContent = 'Confirmar Ação';
             updateActionLimitInfo();
-     }
+        }
     }
     // ==================================
     // ======== FIM DA ALTERAÇÃO ========
     // ==================================
 
 
-post   // --- 5. INICIALIZAÇÃO ---
+    // --- 5. INICIALIZAÇÃO ---
     // Listeners do Modal
     releaseSelect.addEventListener('change', () => {
         const artistId = modalArtistId.value;
@@ -907,16 +907,16 @@ post   // --- 5. INICIALIZAÇÃO ---
             actionLimitInfo.classList.add('hidden');
             confirmActionButton.disabled = false;
             confirmActionButton.textContent = 'Confirmar Ação de Imagem';
-section   }
+        }
         // Se for Ação de Promoção (música)
         else if (ACTION_CONFIG[actionType]) {
             releaseSelectWrapper.classList.remove('hidden');
-m         // A visibilidade do trackSelect é controlada pelo 'change' do releaseSelect
+            // A visibilidade do trackSelect é controlada pelo 'change' do releaseSelect
             // A visibilidade do limite é controlada pelo updateActionLimitInfo
             updateActionLimitInfo();
         }
         // Se for "" (nada selecionado)
-section   else {
+        else {
             releaseSelectWrapper.classList.remove('hidden');
             trackSelectWrapper.classList.add('hidden');
             actionLimitInfo.classList.add('hidden');
@@ -938,6 +938,6 @@ section   else {
         initializeLogin();
     } else {
         console.error("Não foi possível inicializar o login devido a erro no carregamento de dados.");
-post     if (artistActionsList) artistActionsList.innerHTML = "<p>Erro crítico ao carregar dados. Verifique o console.</p>";
+        if (artistActionsList) artistActionsList.innerHTML = "<p>Erro crítico ao carregar dados. Verifique o console.</p>";
     }
 });
