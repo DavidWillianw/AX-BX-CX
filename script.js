@@ -202,7 +202,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 name: r.fields['Nome do Álbum'] || 'Álbum?',
                 artists: r.fields['Artista'] || []
             }));
-      _       singlesData.records.forEach(r => allReleases.push({
+             singlesData.records.forEach(r => allReleases.push({
                 id: r.id,
                 name: r.fields['Nome do Single/EP'] || 'Single?',
                 artists: r.fields['Artista'] || [] // Artista principal ou Dueto
@@ -711,7 +711,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (bSideTypes.includes(otherTrack.trackType)) {
                         maxPercentage = 0.30; // B-sides: máximo 30%
                         // APLICA O NERF de álbum grande
-                      _ if (isLargeAlbum) {
+                       if (isLargeAlbum) {
                             maxPercentage = 0.15; // Reduzido pela metade
                         }
                     } else if (minorTypes.includes(otherTrack.trackType)) {
@@ -741,12 +741,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                         let detailMsg = `   +${gain.toLocaleString('pt-BR')} para "${otherTrack.name}" (${(percentageUsed * 100).toFixed(1)}%)`;
                         if (isLargeAlbum && bSideTypes.includes(otherTrack.trackType)) {
                             detailMsg += " (Nerf Álbum Grande)";
-                    _   }
+                      }
                         distributionDetails.push(detailMsg);
                     }
                 });
             } else {
-        _       console.warn(`Faixa ${selectedTrack.name} (ID: ${selectedTrack.id}) não está associada a um lançamento. Distribuição ignorada.`);
+               console.warn(`Faixa ${selectedTrack.name} (ID: ${selectedTrack.id}) não está associada a um lançamento. Distribuição ignorada.`);
             }
         }
 
@@ -768,7 +768,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 allPromises.push(fetch(trackPatchUrlBase, {
                     ...fetchOptionsPatch,
                     body: JSON.stringify({ records: chunk })
-    _           }));
+              }));
             });
 
             const responses = await Promise.all(allPromises);
@@ -780,7 +780,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (failedResponse) {
                     try {
                         const errorJson = await failedResponse.json();
-          _               errorDetails = JSON.stringify(errorJson.error || errorJson);
+                        errorDetails = JSON.stringify(errorJson.error || errorJson);
                     } catch (e) { /* ignora */ }
                 }
                 const failedIndex = responses.findIndex(response => !response.ok);
@@ -831,7 +831,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             confirmActionButton.disabled = false;
             confirmActionButton.textContent = 'Confirmar Ação';
             updateActionLimitInfo();
-  _   }
+     }
     }
     // ==================================
     // ======== FIM DA ALTERAÇÃO ========
