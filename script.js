@@ -644,7 +644,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const isMain = selectedTrack.artistIds[0] === artistId || selectedTrack.collabType === 'Dueto/Grupo';
         
         let limit;
-      _if (config.limit === 5) {
+      if (config.limit === 5) {
              limit = 5;
         } else {
              limit = isMain ? config.limit : 5;
