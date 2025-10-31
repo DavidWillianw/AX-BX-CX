@@ -94,7 +94,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         { message: "Seu single recebeu aclamação da crítica, você ganhou streams!", minGain: 20000, maxGain: 200000 },
         { message: "Você fez uma performance viral em um festival, você ganhou streams!", minGain: 50000, maxGain: 500000 },
         { message: "Parabéns! Você virou trend no TikTok, você recebeu streams!", minGain: 80000, maxGain: 800000 },
-        { message: "Uma celebridade compartilhou sua música nos stories, você ganhou streams!", minGain: 60000, maxGain: 600000 },
+D-a-celebrity-shared-your-music-on-stories,-you-gained-streams!',-minGain:-60000,-maxGain:-600000-},
         { message: "Seu fandom fez streaming party por 24h! Você ganhou streams!", minGain: 20000, maxGain: 200000 }
     ];
     // ==================================
@@ -233,12 +233,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return {
                     id: r.id,
                     name: r.fields['Nome da Faixa'] || 'Faixa?',
-                    // --- ALTERAÇÃO ---
+                  // --- ALTERAÇÃO ---
                     // release: releaseId, // <- Antigo (string)
                     releases: allReleaseIds, // <- Novo (array)
                     // --- FIM DA ALTERAÇÃO ---
                     streams: r.fields.Streams || 0,
-                    totalStreams: r.fields['Streams Totais'] || 0,
+                  totalStreams: r.fields['Streams Totais'] || 0,
                     trackType: r.fields['Tipo de Faixa'] || 'B-side',
                     isBonusTrack: r.fields['Faixa Bônus?'] || false,
                     artistIds: r.fields['Artista'] || [],
@@ -306,7 +306,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         logoutButton.addEventListener('click', logoutPlayer);
 
-        const storedName = localStorage.getItem(PLAYER_NAME_KEY);
+       const storedName = localStorage.getItem(PLAYER_NAME_KEY);
         if (storedName) {
             const storedPlayer = db.players.find(p => p.name === storedName);
             if (storedPlayer) {
@@ -322,7 +322,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         } else {
            logoutPlayer();
-        }
+     }
     }
 
 
@@ -413,7 +413,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const allReleases = db.releases.filter(r => allReleaseIds.has(r.id));
 
         releaseSelect.innerHTML = '<option value="" disabled selected>Selecione o Single/EP/Álbum...</option>';
-        if (allReleases.length === 0) {
+      if (allReleases.length === 0) {
             releaseSelect.innerHTML += '<option value="" disabled>Nenhum lançamento encontrado</option>';
             return;
         }
@@ -468,7 +468,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // NOVO: Lógica para exibir o label correto
                 let label = t.trackType;
                 // Se for bônus E não for Title/Pre-release, mostra "Faixa Bônus"
-                if (t.isBonusTrack && !actionableTypes.includes(t.trackType)) {
+               if (t.isBonusTrack && !actionableTypes.includes(t.trackType)) {
                     label = 'Faixa Bônus';
                 }
                 o.textContent = `${t.name} (${label})`;
@@ -490,7 +490,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Se for ação de imagem, não faz nada (outra função cuida)
         if (!artist || !actionType || !ACTION_CONFIG[actionType]) {
             actionLimitInfo.classList.add('hidden');
-            confirmActionButton.disabled = true;
+           confirmActionButton.disabled = true;
             return;
         }
 
@@ -531,7 +531,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             confirmActionButton.textContent = 'Limite Atingido';
         } else {
             currentActionCount.style.color = 'var(--text-primary)';
-            confirmActionButton.disabled = false;
+          confirmActionButton.disabled = false;
             confirmActionButton.textContent = 'Confirmar Ação';
         }
     }
@@ -632,7 +632,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } finally {
             confirmActionButton.disabled = false;
             confirmActionButton.textContent = 'Confirmar Ação';
-        }
+     }
     }
 
 
@@ -656,7 +656,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const isMain = selectedTrack.artistIds[0] === artistId || selectedTrack.collabType === 'Dueto/Grupo';
         
         let limit;
-        if (config.limit === 5) {
+      _if (config.limit === 5) {
              limit = 5;
         } else {
              limit = isMain ? config.limit : 5;
@@ -697,8 +697,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             eventMessage = `✨ BÔNUS! ${bonus.message}`;
 
         // 3. Punição Aleatória
-        } else if (eventCheck >= 0.05 && eventCheck < 0.10) { 
-            const punishment = getRandomPunishment();
+        } else if (eventCheck >= 0.05 && eventCheck < 0.10) {s           const punishment = getRandomPunishment();
             streamsToAdd = punishment.value;
             eventMessage = `📉 PUNIÇÃO! ${punishment.message}`;
 
@@ -715,7 +714,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (personalPoints <= 50) {
             pointsMultiplier = 0.70; // 70%
             pointsMessage = ` (Status: Cancelado 70%)`;
-        } else if (personalPoints <= 99) {
+     } else if (personalPoints <= 99) {
             pointsMultiplier = 0.90; // 90%
             pointsMessage = ` (Status: Flop 90%)`;
         } else if (personalPoints >= 500) { // 500 ou mais
@@ -743,7 +742,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 "Streams": newASideStreams,
                 "Streams Totais": newASideTotalStreams
             }
-        });
+      S});
         trackUpdatesLocal.push({
             id: selectedTrack.id,
             newStreams: newASideStreams,
@@ -786,14 +785,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     
                     // NOVO: Faixas bônus não recebem distribuição (pois são acionáveis)
                     if (otherTrack.isBonusTrack) {
-                        maxPercentage = 0; // Não distribui
-                    } else if (bSideTypes.includes(otherTrack.trackType)) {
+                	} else if (bSideTypes.includes(otherTrack.trackType)) {
                         maxPercentage = 0.30; // B-sides: máximo 30%
                         if (isLargeAlbum) {
                             maxPercentage = 0.15; // Reduzido pela metade
                         }
                     } else if (minorTypes.includes(otherTrack.trackType)) {
-                        maxPercentage = 0.10; // Intros/Outros: máximo 10%
+                      maxPercentage = 0.10; // Intros/Outros: máximo 10%
                     } else if (preReleaseTypes.includes(otherTrack.trackType)) {
                         maxPercentage = 0.95; // Pre-releases: máximo 95%
                     }
@@ -803,13 +801,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                         gain = Math.floor(streamsToAdd * percentageUsed);
                     }
 
-                  }
+                    // *** ESTA LINHA ESTAVA COM O ERRO 'tS}' ***
+                    if (gain > 0) {
                         totalDistributedGain += gain;
                         const newOtherStreams = (otherTrack.streams || 0) + gain;
                         const newOtherTotalStreams = (otherTrack.totalStreams || 0) + gain;
                         allTrackPatchData.push({
                             id: otherTrack.id,
-                            fields: { "Streams": newOtherStreams, "Streams Totais": newOtherTotalStreams }
+                          fields: { "Streams": newOtherStreams, "Streams Totais": newOtherTotalStreams }
                         });
                         trackUpdatesLocal.push({
                             id: otherTrack.id,
@@ -817,7 +816,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             newTotalStreams: newOtherTotalStreams,
                         });
                         let detailMsg = `   +${gain.toLocaleString('pt-BR')} para "${otherTrack.name}" (${(percentageUsed * 100).toFixed(1)}%)`;
-                        if (isLargeAlbum && bSideTypes.includes(otherTrack.trackType)) {
+                       	if (isLargeAlbum && bSideTypes.includes(otherTrack.trackType)) {
                             detailMsg += " (Nerf Álbum Grande)";
                         }
                         distributionDetails.push(detailMsg);
@@ -825,7 +824,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
             } else {
                console.warn(`(Ação de Promoção) Nenhum releaseId selecionado. Distribuição ignorada.`);
-            }
+      }
         }
 
         const trackPatchChunks = chunkArray(allTrackPatchData, 10);
@@ -846,7 +845,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 allPromises.push(fetch(trackPatchUrlBase, {
                     ...fetchOptionsPatch,
                     body: JSON.stringify({ records: chunk })
-                }));
+               }));
             });
 
             const responses = await Promise.all(allPromises);
@@ -854,7 +853,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (!allOk) {
                 const failedResponse = responses.find(response => !response.ok);
-                let errorDetails = failedResponse ? `${failedResponse.status} ${failedResponse.statusText}` : 'Erro desconhecido';
+            	let errorDetails = failedResponse ? `${failedResponse.status} ${failedResponse.statusText}` : 'Erro desconhecido';
                 if (failedResponse) {
                     try {
                         const errorJson = await failedResponse.json();
@@ -862,7 +861,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     } catch (e) { /* ignora */ }
                 }
                 const failedIndex = responses.findIndex(response => !response.ok);
-                const failedEntity = failedIndex === 0 ? 'Artista' : `Faixas (chunk ${failedIndex})`;
+             	const failedEntity = failedIndex === 0 ? 'Artista' : `Faixas (chunk ${failedIndex})`;
                 throw new Error(`Falha ao salvar: ${failedEntity} (${errorDetails})`);
             }
 
@@ -872,8 +871,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const trackInDb = db.tracks.find(t => t.id === update.id);
                 if (trackInDb) {
                     trackInDb.streams = update.newStreams;
-                    trackInDb.totalStreams = update.newTotalStreams;
-                }
+              	}
             });
 
             let alertMessage = `Ação "${actionTypeSelect.options[actionTypeSelect.selectedIndex].text}" registrada!\n\n`;
@@ -882,7 +880,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             if (streamsToAdd >= 0) {
-                 alertMessage += `📈 Ganho Principal: +${streamsToAdd.toLocaleString('pt-BR')} streams para "${selectedTrack.name}"${pointsMessage}.\n\n`;
+             	alertMessage += `📈 Ganho Principal: +${streamsToAdd.toLocaleString('pt-BR')} streams para "${selectedTrack.name}"${pointsMessage}.\n\n`;
             } else {
                  alertMessage += `📉 Perda Principal: ${streamsToAdd.toLocaleString('pt-BR')} streams para "${selectedTrack.name}".\n\n`;
             }
@@ -897,7 +895,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (!isMain && config.limit !== 5) {
                 alertMessage += ` (Limite de 5 usos para participações "Feat.")`;
-            }
+       }
 
             alert(alertMessage);
             actionModal.classList.add('hidden');
@@ -916,7 +914,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ==================================
 
 
-    // --- 5. INICIALIZAÇÃO ---
+   // --- 5. INICIALIZAÇÃO ---
     // Listeners do Modal
     releaseSelect.addEventListener('change', () => {
         const artistId = modalArtistId.value;
@@ -924,9 +922,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             populateTrackSelect(releaseSelect.value, artistId);
         } else {
             trackSelectWrapper.classList.add('hidden');
-            trackSelect.innerHTML = '<option value="" disabled selected>Selecione um lançamento</option>';
-            updateActionLimitInfo();
-        }
+          	}
     });
     
     // ==================================
@@ -938,23 +934,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Se for Ação de Imagem (artista)
         if (IMAGE_ACTION_CONFIG[actionType]) {
             releaseSelectWrapper.classList.add('hidden');
-            trackSelectWrapper.classList.add('hidden');
-            actionLimitInfo.classList.add('hidden');
+         	trackSelectWrapper.classList.add('hidden');
+    	actionLimitInfo.classList.add('hidden');
             confirmActionButton.disabled = false;
             confirmActionButton.textContent = 'Confirmar Ação de Imagem';
         }
         // Se for Ação de Promoção (música)
-        else if (ACTION_CONFIG[actionType]) {
+      	else if (ACTION_CONFIG[actionType]) {
             releaseSelectWrapper.classList.remove('hidden');
-            // A visibilidade do trackSelect é controlada pelo 'change' do releaseSelect
+         	// A visibilidade do trackSelect é controlada pelo 'change' do releaseSelect
             // A visibilidade do limite é controlada pelo updateActionLimitInfo
             updateActionLimitInfo();
         }
         // Se for "" (nada selecionado)
-        else {
+      	else {
             releaseSelectWrapper.classList.remove('hidden');
-            trackSelectWrapper.classList.add('hidden');
-            actionLimitInfo.classList.add('hidden');
+         	trackSelectWrapper.classList.add('hidden');
+    	actionLimitInfo.classList.add('hidden');
             confirmActionButton.disabled = true;
         }
     });
@@ -964,12 +960,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     trackSelect.addEventListener('change', updateActionLimitInfo);
     cancelActionButton.addEventListener('click', () => { actionModal.classList.add('hidden'); });
+    confirmActionButton.addEventListener('click', handleConfirmAction); // <- Agora chama o roteador
+    // *** O ERRO 'button-click' />' FOI REMOVIDO DAQUI ***
+
     // Carga inicial
     await loadRequiredData();
     if (db.players && db.artists) {
-        initializeLogin();
+      	initializeLogin();
     } else {
         console.error("Não foi possível inicializar o login devido a erro no carregamento de dados.");
-        if (artistActionsList) artistActionsList.innerHTML = "<p>Erro crítico ao carregar dados. Verifique o console.</p>";
+   	if (artistActionsList) artistActionsList.innerHTML = "<p>Erro crítico ao carregar dados. Verifique o console.</p>";
     }
 });
