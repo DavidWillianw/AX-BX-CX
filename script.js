@@ -685,7 +685,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             eventMessage = `✨ BÔNUS! ${bonus.message}`;
 
         // 3. Punição Aleatória
-        } else if (eventCheck >= 0.05 && eventCheck < 0.10) {s           const punishment = getRandomPunishment();
+        } else if (eventCheck >= 0.05 && eventCheck < 0.10) {
+            const punishment = getRandomPunishment();
             streamsToAdd = punishment.value;
             eventMessage = `📉 PUNIÇÃO! ${punishment.message}`;
 
