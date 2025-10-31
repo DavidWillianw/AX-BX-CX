@@ -964,7 +964,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     trackSelect.addEventListener('change', updateActionLimitInfo);
     cancelActionButton.addEventListener('click', () => { actionModal.classList.add('hidden'); });
-button-click' />
     // Carga inicial
     await loadRequiredData();
     if (db.players && db.artists) {
