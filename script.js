@@ -803,7 +803,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         gain = Math.floor(streamsToAdd * percentageUsed);
                     }
 
-                  tS}
+                  }
                         totalDistributedGain += gain;
                         const newOtherStreams = (otherTrack.streams || 0) + gain;
                         const newOtherTotalStreams = (otherTrack.totalStreams || 0) + gain;
