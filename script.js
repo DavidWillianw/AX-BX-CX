@@ -731,7 +731,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 "Streams": newASideStreams,
                 "Streams Totais": newASideTotalStreams
             }
-      S});
+      });
         trackUpdatesLocal.push({
             id: selectedTrack.id,
             newStreams: newASideStreams,
