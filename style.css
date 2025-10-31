@@ -1,4 +1,4 @@
-/* --- VARIAVEIS E ESTILOS GLOBAIS --- */
+/* --- 1. VARIAVEIS E ESTILOS GLOBAIS (Mobile-First) --- */
 :root {
   --spotify-green: #1db954;
   --background-primary: #121212;
@@ -6,6 +6,7 @@
   --background-tertiary: #282828;
   --text-primary: #ffffff;
   --text-secondary: #b3b3b3;
+  --text-tertiary: #535353;
   --trend-down-red: #e22134;
 }
 
@@ -14,328 +15,303 @@
   padding: 0;
   box-sizing: border-box;
 }
-.action-modal-content .modal-actions .cancel-btn {
-  background: var(--background-tertiary); color: var(--text-primary); border: 1px solid #535353;
-  padding: 14px 20px; border-radius: 500px; font-weight: 600; cursor: pointer; margin: 0;
-  width: auto; flex-grow: 1;
-}
+
 body {
   font-family: "Montserrat", sans-serif;
   background-color: var(--background-primary);
   color: var(--text-primary);
-  padding: 20px;
-}
-
-.hidden { display: none !important; }
-
-/* --- Container Principal (Página de Ações) --- */
-.container {
-  max-width: 600px;
-  margin: 20px auto;
-  background-color: var(--background-secondary);
-  padding: 30px;
-  border-radius: 12px;
+  /* Padding para mobile, dando respiro nas laterais */
+  padding: 1rem;
+  min-height: 100vh;
 }
 
 h1 {
   color: var(--spotify-green);
   text-align: center;
-  margin-bottom: 30px;
-}
-h2 {
-    margin-top: 30px;
-    margin-bottom: 15px;
-    border-bottom: 1px solid var(--background-tertiary);
-    padding-bottom: 10px;
+  font-size: 1.75rem; /* Ajuste leve de tamanho */
+  margin-bottom: 2rem;
 }
 
-/* --- ESTILOS DO LOGIN (copiados/adaptados) --- */
+h2 {
+  font-size: 1.25rem;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--background-tertiary);
+  padding-bottom: 0.75rem;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* --- 2. LAYOUT PRINCIPAL --- */
+.container {
+  width: 100%;
+  /* No mobile, max-width é 600px, mas o 'auto' centraliza quando a tela for maior */
+  max-width: 600px;
+  margin: 1rem auto;
+  background-color: var(--background-secondary);
+  padding: 1.5rem; /* Padding interno do container */
+  border-radius: 12px;
+}
+
+.footer-link {
+  margin-top: 2rem;
+  text-align: center;
+}
+.footer-link a {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  text-decoration: none;
+}
+.footer-link a:hover {
+  color: var(--spotify-green);
+  text-decoration: underline;
+}
+
+/* --- 3. SEÇÃO DE LOGIN --- */
 .studio-login-wrapper {
   background-color: var(--background-primary);
-  padding: 24px;
+  padding: 1.5rem;
   border-radius: 12px;
-  margin-bottom: 24px;
+  margin-bottom: 1.5rem;
 }
-.studio-login-wrapper label {
-  display: block; font-size: 12px; font-weight: 700;
-  color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase;
+
+#loggedInInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
-.studio-login-wrapper select {
-  width: 100%; background-color: var(--background-tertiary);
-  border: 1px solid #535353; color: var(--text-primary); padding: 14px;
-  border-radius: 6px; font-size: 14px; font-family: "Montserrat", sans-serif;
-  margin-bottom: 16px;
-  appearance: none; /* Remove seta padrão */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23b3b3b3' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10L8 11z'/%3E%3C/svg%3E"); /* Adiciona seta customizada */
+#loggedInInfo p {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  /* Garante que o texto não "empurre" o botão em telas pequenas */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-right: 1rem;
+}
+#loggedInInfo p strong {
+  color: var(--text-primary);
+}
+
+/* --- 4. FORMULÁRIOS UNIFICADOS (Input e Select) --- */
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+}
+
+/* Estilo unificado para inputs e selects */
+.form-input {
+  width: 100%;
+  background-color: var(--background-tertiary);
+  border: 1px solid var(--text-tertiary);
+  color: var(--text-primary);
+  padding: 0.875rem; /* 14px */
+  border-radius: 6px;
+  font-family: "Montserrat", sans-serif;
+  
+  /* * !! IMPORTANTE (FOCO MOBILE) !!
+   * Usar 16px impede o "auto-zoom" em inputs e selects no iOS.
+   */
+  font-size: 16px; 
+}
+
+/* Remove a aparência padrão do select */
+select.form-input {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.3.org/2000/svg' fill='%23b3b3b3' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10L8 11z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 14px center;
   background-size: 12px;
   padding-right: 40px; /* Espaço para a seta */
 }
-.studio-login-wrapper select:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+
+.form-input:disabled,
+select.form-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-#loggedInInfo p { font-size: 14px; color: var(--text-secondary); }
-#loggedInInfo p strong { color: var(--text-primary); }
-#loggedInInfo { display: flex; justify-content: space-between; align-items: center; }
-
-/* --- BOTÕES (copiados/adaptados) --- */
+/* --- 5. BOTÕES UNIFICADOS --- */
+/* Botão primário (Verde) */
 .submit-btn {
-  background-color: var(--spotify-green); color: black; border: none;
-  padding: 16px 24px; width: 100%; border-radius: 500px; font-size: 16px;
-  font-weight: 700; cursor: pointer; margin-top: 16px;
+  background-color: var(--spotify-green);
+  color: black;
+  border: none;
+  padding: 1rem 1.5rem;
+  width: 100%;
+  border-radius: 500px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 1rem;
   transition: transform 0.2s ease, background-color 0.2s ease;
 }
-.submit-btn:hover:not(:disabled) { transform: scale(1.02); background-color: #1ed760; }
-.submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.submit-btn:hover:not(:disabled) {
+  transform: scale(1.02);
+  background-color: #1ed760;
+}
+.submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
+/* Botão secundário (Cancelar / Cinza) */
+.cancel-btn {
+  background: var(--background-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--text-tertiary);
+  padding: 0.875rem 1.25rem;
+  border-radius: 500px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+}
+.cancel-btn:hover {
+  border-color: var(--text-secondary);
+}
+
+/* Botão pequeno (Sair / Selecionar Ação) */
 .small-btn {
-  background: transparent; border: 1px solid var(--spotify-green);
-  color: var(--spotify-green); padding: 6px 10px; border-radius: 6px;
-  font-weight: 700; cursor: pointer; margin-left: 6px; font-size: 12px;
+  background: transparent;
+  border: 1px solid var(--spotify-green);
+  color: var(--spotify-green);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.75rem; /* 12px */
+  flex-shrink: 0; /* Impede que o botão encolha */
 }
-.small-btn:hover:not(:disabled) { background: rgba(29, 185, 84, 0.1); }
-.small-btn:disabled { opacity: 0.5; cursor: not-allowed; border-color: var(--text-secondary); color: var(--text-secondary); }
-.small-btn i { margin-right: 4px; }
+.small-btn:hover:not(:disabled) {
+  background: rgba(29, 185, 84, 0.1);
+}
 
-/* --- LISTA DE AÇÕES --- */
+/* --- 6. LISTA DE ARTISTAS --- */
 #artistActionsList {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-/* Estilo para lista de artistas na página principal */
-#artistActionsList .artist-action-item {
-    display: flex;
-    align-items: center;
-    background-color: var(--background-tertiary);
-    padding: 13px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-#artistActionsList .artist-action-item:hover {
-    background-color: #3a3a3a;
-}
-#artistActionsList .artist-action-item .artist-name {
-     font-weight: 600;
-     font-size: 16px;
-     margin-right: 15px;
-     white-space: nowrap;
-     overflow: hidden;
-     text-overflow: ellipsis;
-     flex-grow: 1; /* Permite que o nome ocupe espaço */
-}
-#artistActionsList .artist-action-item .open-actions-icon {
-    color: var(--text-secondary);
-    margin-left: auto;
-    padding-left: 15px;
-    flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
+.artist-action-item {
+  display: flex;
+  align-items: center;
+  background-color: var(--background-tertiary);
+  padding: 0.75rem 1rem; /* Padding menor */
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+  gap: 1rem; /* Espaço entre o nome e o botão */
+}
+.artist-action-item:hover {
+  background-color: #3a3a3a;
+}
 
-/* --- MODAL DE AÇÃO --- */
+/* * Span que contém o nome e os pontos do artista
+ * (Corrigido para usar o padrão "flex-truncate")
+ */
+.artist-action-item > span {
+  font-weight: 600;
+  font-size: 1rem;
+  
+  /* Mágica do Flexbox para truncar o texto com "..." */
+  flex: 1; /* Ocupa o espaço disponível */
+  min-width: 0; /* Permite que o flex-item encolha */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.artist-action-item .artist-action-buttons {
+  flex-shrink: 0; /* Impede que o botão encolha */
+  margin-left: auto; /* Empurra para a direita */
+}
+
+/* --- 7. MODAL DE AÇÃO (Mobile-First) --- */
 .modal-overlay {
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); display: flex;
-  align-items: center; justify-content: center; z-index: 1000; animation: fadeIn 0.3s ease;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  display: flex;
+  /* Alinha o modal no centro (vertical/horizontal) */
+  align-items: center; 
+  justify-content: center;
+  z-index: 1000;
+  /* Garante que o modal não cole nas bordas da tela */
+  padding: 1rem; 
 }
+
 .modal-content {
-  background: var(--background-secondary); padding: 24px; border-radius: 12px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5); max-width: 450px;
-  width: 90%;
-}
-.modal-content h3 { color: var(--spotify-green); margin-bottom: 20px; text-align: center; }
+  background: var(--background-secondary);
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+  width: 100%;
+  max-width: 500px; /* Largura máxima do modal */
 
-/* Adapta os estilos de formulário */
-.action-modal-content .studio-form-group { margin-bottom: 16px; } /* Adicionado */
-.action-modal-content .studio-form-group label {
-  display: block; font-size: 12px; font-weight: 700;
-  color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase;
-}
-.action-modal-content .studio-form-group select {
-  width: 100%; background-color: var(--background-tertiary);
-  border: 1px solid #535353; color: var(--text-primary); padding: 14px;
-  border-radius: 6px; font-size: 14px; font-family: "Montserrat", sans-serif;
-  margin-bottom: 0px; /* Removido margin-bottom do select */
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23b3b3b3' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10L8 11z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 14px center;
-  background-size: 12px;
-  padding-right: 40px;
-}
-.action-modal-content .studio-form-group select:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  /* * !! IMPORTANTE (FOCO MOBILE) !!
+   * Limita a altura do modal e adiciona scroll interno
+   * caso o conteúdo (muitos selects) não caiba na tela.
+   */
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
-.action-modal-content .modal-actions { display: flex; gap: 10px; margin-top: 24px; }
-.action-modal-content .modal-actions .submit-btn {
-    width: auto;
-    flex-grow: 1;
-    margin: 0;
-    margin-bottom: -26px;
-    margin-top: -43px;
+.modal-content h3 {
+  color: var(--spotify-green);
+  margin-bottom: 1.5rem;
+  text-align: center;
+  font-size: 1.5rem;
 }
 
-@.action-modal-content .modal-actions .cancel-btn {
-  background: var(--background-tertiary); color: var(--text-primary); border: 1px solid #535353;
-  padding: 14px 20px; border-radius: 500px; font-weight: 600; cursor: pointer; margin: 0;
-  width: auto; flex-grow: 1;
+.modal-actions {
+  display: flex;
+  /* * (Mobile-First)
+   * Por padrão, os botões ficam empilhados (coluna)
+   */
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
 }
-#actionCooldownInfo {
-   font-size: 11px;
-   color: var(--trend-down-red);
-   text-align: center;
-   margin-top: 10px;
-   height: 1.2em;
-   font-weight: 500;
-}
-#remixCountInfo {
-    font-size: 12px;
-    color: var(--text-secondary);
-    margin-top: 10px; /* Adicionado espaço acima */
-    margin-bottom: 10px; /* Reduzido espaço abaixo */
-    background-color: var(--background-tertiary);
-    padding: 8px 12px;
-    border-radius: 4px;
-    text-align: center;
-}
-#remixCountInfo #currentRemixCount {
-    font-weight: bold;
-    color: var(--text-primary);
+/* No modal, o botão submit não precisa de margem no topo */
+.modal-actions .submit-btn {
+  margin-top: 0;
 }
 
 
-/* --- FOOTER LINK --- */
-.footer-link {
-    margin-top: 30px;
-    text-align: center;
-}
-.footer-link a {
-    color: var(--text-secondary);
-    font-size: 14px;
-    text-decoration: none;
-}
-.footer-link a:hover {
-    color: var(--spotify-green);
-    text-decoration: underline;
-}
+/* --- 8. AJUSTES PARA DESKTOP (min-width) --- */
+@media (min-width: 600px) {
+  body {
+    padding: 2rem; /* Mais respiro no desktop */
+  }
 
-/* --- RESPONSIVIDADE --- */
-@media (max-width: 480px) {
-    body {
-        padding: 10px; /* Menos padding no body */
-    }
-    .container {
-        padding: 15px;
-    }
-     /* Na lista de artistas, força quebra de linha se necessário */
-    .artist-action-item {
-        flex-wrap: wrap;
-        gap: 10px;
-    }
-     .artist-action-item .artist-name {
-        max-width: 100%;
-        margin-right: 0;
-    }
-     .artist-action-item .open-actions-icon {
-        margin-left: 0;
-        width: 100%;
-        text-align: right;
-    }
+  .container {
+    padding: 2.5rem; /* Mais padding no container */
+  }
 
-    .modal-content {
-        padding: 15px;
-    }
-    .action-modal-content .modal-actions {
-        flex-direction: column;
-    }
-     .action-modal-content .modal-actions button {
-        width: 100%;
-    }
-    .action-modal-content .studio-form-group select {
-        padding: 12px; /* Menor padding nos selects */
-        padding-right: 35px; /* Ajuste para seta */
-        background-position: right 12px center;
-      margin-bottom: -15px;
-    }
+  .modal-content {
+    padding: 2rem; /* Mais padding no modal */
+  }
 
-}
-
-/* ==============================================
-=== ADIÇÕES E CORREÇÕES - PODE COLAR NO FIM ===
-==============================================
-*/
-
-/* * 1. CORREÇÃO DO NOME E PONTOS DO ARTISTA
- * O seu JS cria um <span...>, mas o seu CSS procurava uma classe ".artist-name".
- * Este novo seletor corrige isso, alinhando o nome e os pontos corretamente,
- * e impedindo que o texto "vaze" ou empurre o botão.
-*/
-#artistActionsList .artist-action-item > span {
-    font-weight: 600;
-    font-size: 16px;
-    margin-right: 15px;
-    
-    /* Isso força o alinhamento correto e o "..." no final */
-    flex: 1;
-    min-width: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-/* * 2. CORREÇÃO DO MODAL MUITO GRANDE (MOBILE)
- * Isso faz o modal ter uma altura máxima (90% da tela)
- * e adiciona uma barra de rolagem INTERNA se as opções não couberem.
-*/
-.modal-content {
-    max-height: 90vh;
-    overflow-y: auto;
-}
-
-/* * 3. MELHORIAS GERAIS PARA MOBILE (Dentro da sua @media query)
-*/
-@media (max-width: 480px) {
-
-  /*    * Ajusta o modal para ser menor e ter menos padding no mobile.
-   */
-  .modal-overlay {
-      padding: 10px; /* Garante que o modal não cole nas bordas */
-  }
-  .modal-content {
-      padding: 20px; /* Menos padding interno no mobile */
-  }
-  .modal-content h3 {
-      font-size: 20px; /* Fonte do título do modal menor */
-  }
-
-  /*    * CORREÇÃO MAIS IMPORTANTE: Impede o "ZOOM" automático no iOS.
-   * Ao definir a fonte como 16px, o iPhone não tenta mais dar zoom
-   * quando você clica no <select>.
-   */
-  .action-modal-content .studio-form-group select,
-  .studio-login-wrapper input {
-      font-size: 16px; /* Impede o zoom no iOS */
-  }
-
-  /*    * Garante que o item do artista na lista principal
-   * não quebre a linha e alinhe corretamente no mobile.
-   */
-  .artist-action-item {
-      flex-wrap: nowrap; /* Impede a quebra de linha */
-      gap: 0; /* Remove o gap que você tinha */
-  }
-  .artist-action-item .artist-action-buttons {
-      flex-shrink: 0; /* Impede que o botão encolha */
-      margin-left: auto;
-  }
-  /* Remove o seletor antigo que não funciona */
-  .artist-action-item .open-actions-icon {
-      display: none;
-  }
+  /* * (Desktop)
+   * No desktop, os botões do modal ficam lado a lado (linha)
+   */
+  .modal-actions {
+    flex-direction: row;
+    gap: 1rem;
+  }
 }
