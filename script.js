@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const actionModal = document.getElementById('actionModal');
     const modalArtistName = document.getElementById('modalArtistName');
     const modalArtistId = document.getElementById('modalArtistId');
-    const releaseSelectWrapper = document.getElementById('releaseSelectWrapper'); 
+    const releaseSelectWrapper = document.getElementById('releaseSelectWrapper'); 
     const releaseSelect = document.getElementById('releaseSelect');
     const trackSelectWrapper = document.getElementById('trackSelectWrapper');
     const trackSelect = document.getElementById('trackSelect');
@@ -174,7 +174,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     name: r.fields['Name'] || '?',
                     RPGPoints: r.fields.RPGPoints || 0,
                     LastActive: r.fields.LastActive || null,
-                    personalPoints: r.fields['Pontos Pessoais'] || 150 
+                    personalPoints: r.fields['Pontos Pessoais'] || 150 
                 };
                 for (const key in ACTION_CONFIG) {
                     const config = ACTION_CONFIG[key];
@@ -216,18 +216,31 @@ document.addEventListener('DOMContentLoaded', async () => {
             // ==================================
 
             // ==================================
-            // === ATUALIZAÇÃO TRACKS (BÔNUS) ===
+            // === ATUALIZAÇÃO TRACKS (BÔNUS E MÚLTIPLOS RELEASES) ===
             // ==================================
             db.tracks = tracksData.records.map(r => {
-                const releaseId = (r.fields['Álbuns']?.[0]) || (r.fields['Singles e EPs']?.[0]) || null;
+                // LÓGICA ANTIGA (REMOVIDA)
+                // const releaseId = (r.fields['Álbuns']?.[0]) || (r.fields['Singles e EPs']?.[0]) || null;
+                
+                // --- INÍCIO DA ALTERAÇÃO ---
+                // Pega TODOS os IDs de álbuns e singles
+                const albumIds = r.fields['Álbuns'] || [];
+                const singleIds = r.fields['Singles e EPs'] || [];
+                // Combina as duas listas e remove duplicatas (usando Set)
+                const allReleaseIds = [...new Set([...albumIds, ...singleIds])];
+                // --- FIM DA ALTERAÇÃO ---
+
                 return {
                     id: r.id,
                     name: r.fields['Nome da Faixa'] || 'Faixa?',
-                    release: releaseId,
+                    // --- ALTERAÇÃO ---
+                    // release: releaseId, // <- Antigo (string)
+                    releases: allReleaseIds, // <- Novo (array)
+                    // --- FIM DA ALTERAÇÃO ---
                     streams: r.fields.Streams || 0,
                     totalStreams: r.fields['Streams Totais'] || 0,
                     trackType: r.fields['Tipo de Faixa'] || 'B-side',
-                    isBonusTrack: r.fields['Faixa Bônus?'] || false, // <-- NOVO
+                    isBonusTrack: r.fields['Faixa Bônus?'] || false,
                     artistIds: r.fields['Artista'] || [],
                     collabType: r.fields['Tipo de Colaboração'] || null
                 };
@@ -368,7 +381,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ==================================
-    // === ATUALIZAÇÃO populateReleaseSelect (DELUXE) ===
+    // === ATUALIZAÇÃO populateReleaseSelect (DELUXE E MÚLTIPLOS RELEASES) ===
     // ==================================
     function populateReleaseSelect(artistId) {
         const mainArtistReleases = db.releases.filter(r => r.artists && r.artists.includes(artistId));
@@ -382,12 +395,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             const isActionableType = actionableTypes.includes(track.trackType);
             const isBonus = track.isBonusTrack === true;
 
-            if (track.release &&
+            // --- INÍCIO DA ALTERAÇÃO ---
+            // Verifica se a track tem releases (agora é um array)
+            if (track.releases && track.releases.length > 0 &&
                 track.artistIds.includes(artistId) &&
                 (isActionableType || isBonus)) { // <-- LÓGICA ATUALIZADA
-
-                featuredReleaseIds.add(track.release);
+                
+                // Adiciona CADA releaseId do array ao Set
+                track.releases.forEach(releaseId => {
+                    featuredReleaseIds.add(releaseId);
+                });
             }
+            // --- FIM DA ALTERAÇÃO ---
         });
 
         const allReleaseIds = new Set([...mainArtistReleaseIds, ...featuredReleaseIds]);
@@ -414,7 +433,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ==================================
 
     // ==================================
-    // === ATUALIZAÇÃO populateTrackSelect (BÔNUS) ===
+    // === ATUALIZAÇÃO populateTrackSelect (BÔNUS E MÚLTIPLOS RELEASES) ===
     // ==================================
     function populateTrackSelect(releaseId, artistId) {
         const actionableTypes = ['Title Track', 'Pre-release'];
@@ -424,9 +443,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             const isActionableType = actionableTypes.includes(t.trackType);
             const isBonus = t.isBonusTrack === true;
             
-            return t.release === releaseId &&
+            // --- INÍCIO DA ALTERAÇÃO ---
+            // Verifica se o array 'releases' da faixa INCLUI o releaseId selecionado no dropdown
+            return t.releases && t.releases.includes(releaseId) &&
                   (isActionableType || isBonus) && // <-- LÓGICA ATUALIZADA
                    t.artistIds.includes(artistId);
+            // --- FIM DA ALTERAÇÃO ---
         });
 
         trackSelect.innerHTML = '<option value="" disabled selected>Selecione a Faixa Título / Pre-release...</option>';
@@ -619,8 +641,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function handlePromotionAction(actionType) {
         const artistId = modalArtistId.value;
         const trackId = trackSelect.value;
+        // --- INÍCIO DA ALTERAÇÃO ---
+        // Precisamos saber qual release o usuário SELECIONOU no dropdown
+        // para distribuir os streams para as B-sides corretas.
+        const selectedReleaseId = releaseSelect.value;
+        // --- FIM DA ALTERAÇÃO ---
 
-        if (!artistId || !trackId || !actionType) { alert("Selecione artista, lançamento, faixa e tipo de ação."); return; }
+        if (!artistId || !trackId || !actionType || !selectedReleaseId) { alert("Selecione artista, lançamento, faixa e tipo de ação."); return; } // <- Verificação adicionada
         const artist = db.artists.find(a => a.id === artistId);
         const selectedTrack = db.tracks.find(t => t.id === trackId);
         const config = ACTION_CONFIG[actionType];
@@ -729,10 +756,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         let distributionDetails = [];
 
         if (config.isPromotion && streamsToAdd > 0 && isMain) {
-            const releaseId = selectedTrack.release;
+            // --- INÍCIO DA ALTERAÇÃO ---
+            // const releaseId = selectedTrack.release; // <- Lógica antiga (não funciona mais, 'release' agora é 'releases')
+            const releaseId = selectedReleaseId; // <- Lógica nova: usa o ID do dropdown que o usuário selecionou
+            // --- FIM DA ALTERAÇÃO ---
+            
             if (releaseId) {
                 // Pega todas as faixas do lançamento para checar o tamanho
-                const allTracksInRelease = db.tracks.filter(t => t.release === releaseId);
+                // --- INÍCIO DA ALTERAÇÃO ---
+                // const allTracksInRelease = db.tracks.filter(t => t.release === releaseId); // <- Lógica antiga
+                // Lógica nova: checa se o array 'releases' da faixa INCLUI o releaseId selecionado
+                const allTracksInRelease = db.tracks.filter(t => t.releases && t.releases.includes(releaseId));
+                // --- FIM DA ALTERAÇÃO ---
                 const isLargeAlbum = allTracksInRelease.length > 30; // <-- NOVO: Checa álbum grande
 
                 // Pega as "outras" faixas (excluindo a principal)
@@ -740,7 +775,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 // NOVO: Faixa Bônus agora NÃO é mais B-side (é acionável)
                 // A distribuição só se aplica a B-sides e menores
-                const bSideTypes = ['B-side']; 
+                const bSideTypes = ['B-side']; 
                 const preReleaseTypes = ['Pre-release'];
                 const minorTypes = ['Intro', 'Outro', 'Skit', 'Interlude'];
 
@@ -768,7 +803,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         gain = Math.floor(streamsToAdd * percentageUsed);
                     }
 
-                    if (gain > 0) {
+                  tS}
                         totalDistributedGain += gain;
                         const newOtherStreams = (otherTrack.streams || 0) + gain;
                         const newOtherTotalStreams = (otherTrack.totalStreams || 0) + gain;
@@ -789,7 +824,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 });
             } else {
-               console.warn(`Faixa ${selectedTrack.name} (ID: ${selectedTrack.id}) não está associada a um lançamento. Distribuição ignorada.`);
+               console.warn(`(Ação de Promoção) Nenhum releaseId selecionado. Distribuição ignorada.`);
             }
         }
 
@@ -929,9 +964,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     trackSelect.addEventListener('change', updateActionLimitInfo);
     cancelActionButton.addEventListener('click', () => { actionModal.classList.add('hidden'); });
-    confirmActionButton.addEventListener('click', handleConfirmAction); // <- Agora chama o roteador
-
-
+button-click' />
     // Carga inicial
     await loadRequiredData();
     if (db.players && db.artists) {
